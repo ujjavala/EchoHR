@@ -105,6 +105,7 @@ Webhook + automation endpoints (MCP-friendly):
 - `POST /webhooks/notion` — reacts to Notion events:
   - New Candidate → auto-create Application + SLA Task for the stage owner
   - Offer set to Accepted → auto-create Onboarding Journey + first 3 monthly Check-ins
+- `POST /webhooks/figma` — Figma “Ready for Review” comment → creates a Notion Review task (type Review) due tomorrow and posts Slack if configured
 - `POST /slack/notify` — simple Slack DM/channel helper
 - `POST /summaries/interview|review|exit` — OpenAI summaries ready to write back to Notion
 - `GET /health` — status
@@ -167,9 +168,9 @@ MCP end-to-end:
 - STDIO-only clients: `npm run mcp-remote:local` to expose the local automation server as an MCP endpoint, or `npx -y mcp-remote https://mcp.notion.com/mcp` for hosted.
 - VS Code: `.vscode/settings.json` points MCP-capable extensions to `./mcp.json`; authenticate when prompted.
 
-Figma/Make flow (optional):
-- Open `automations/make/figma-status-to-notion.json` in Make, set tokens, and map `data_source_id` values from `.echohr-install-state.json`.
-- When a Figma frame hits “Ready for Review,” Make creates/updates a Notion Task, attaches to a Check-in, and posts to Slack with a thumbnail.
+Figma flows:
+- Local webhook: `POST /webhooks/figma` with a Figma comment payload containing “Ready for Review” → Notion Review task (due tomorrow) + Slack notify (if configured).
+- Make scenario: `automations/make/figma-status-to-notion.json` — when a Figma frame hits “Ready for Review,” create/update a Notion Task, attach to a Check-in, and post to Slack with a thumbnail.
 
 ## MCP client setup
 

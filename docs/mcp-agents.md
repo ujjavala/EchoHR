@@ -6,6 +6,7 @@ Use these prompts in your MCP-capable client (Notion + Slack + Calendar + Figma 
 “Fetch latest Figma comments tagged Ready for Review. For each: create a Notion Task in EchoHR Tasks (type Review), set Due Date tomorrow, link the Figma URL. Create a calendar event tomorrow 10am with attendees <emails>. Post a Slack update with task link + Figma link.”
 
 MCP servers: Figma, Notion, Calendar, Slack.
+Note: You can also send Figma comment payloads to `POST /webhooks/figma` (automation server) to auto-create the Review task + Slack notify.
 
 ## Candidate no-ghosting sweep
 “In EchoHR Candidates, find active candidates whose Last Update Sent is >2 days ago. Draft candidate-safe updates, set Personalized Next Step, and notify Stage Owner in Slack. If missing Application, create one.”
