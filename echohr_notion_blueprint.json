@@ -1,0 +1,365 @@
+{
+  "system": {
+    "name": "EchoHR",
+    "philosophy": "Rejections hurt, but ghosting hurts even more. Everyone deserves timely feedback and clarity.",
+    "stack": [
+      "Notion",
+      "Notion API",
+      "Make",
+      "Slack API",
+      "Gmail or Outlook",
+      "Google Calendar or Outlook Calendar",
+      "OpenAI API",
+      "Google Drive or DocuSign"
+    ]
+  },
+  "databases": [
+    {
+      "name": "People",
+      "title": "Name",
+      "properties": [
+        { "name": "Name", "type": "title" },
+        { "name": "Person ID", "type": "formula", "formula": "upper(slice(replaceAll(id(),\"-\",\"\"),0,8))" },
+        { "name": "Work Email", "type": "email" },
+        { "name": "Personal Email", "type": "email" },
+        { "name": "Slack User ID", "type": "rich_text" },
+        { "name": "Lifecycle Type", "type": "select", "options": ["Candidate", "Employee", "Manager", "Interviewer", "Buddy", "Alumni"] },
+        { "name": "Employment Status", "type": "select", "options": ["Prospect", "Active", "Leave", "Exited"] },
+        { "name": "Department", "type": "select", "options": ["Eng", "Product", "Design", "Sales", "Ops", "Other"] },
+        { "name": "Manager", "type": "relation", "database": "People" },
+        { "name": "Buddy", "type": "relation", "database": "People" },
+        { "name": "Start Date", "type": "date" },
+        { "name": "End Date", "type": "date" },
+        { "name": "Birth Date", "type": "date" },
+        { "name": "Tenure (Months)", "type": "formula", "formula": "if(empty(prop(\"Start Date\")), 0, dateBetween(now(), prop(\"Start Date\"), \"months\"))" },
+        { "name": "Portal URL", "type": "url" }
+      ]
+    },
+    {
+      "name": "Roles",
+      "title": "Role Name",
+      "properties": [
+        { "name": "Role Name", "type": "title" },
+        { "name": "Hiring Manager", "type": "relation", "database": "People" },
+        { "name": "Department", "type": "select" },
+        { "name": "Hiring Status", "type": "select", "options": ["Draft", "Open", "On Hold", "Closed"] },
+        { "name": "Interview Plan", "type": "rich_text" },
+        { "name": "Stage SLA Days", "type": "number" }
+      ]
+    },
+    {
+      "name": "Candidates",
+      "title": "Candidate Name",
+      "properties": [
+        { "name": "Candidate Name", "type": "title" },
+        { "name": "Person", "type": "relation", "database": "People" },
+        { "name": "Primary Role", "type": "relation", "database": "Roles" },
+        { "name": "Candidate Status", "type": "select", "options": ["Applied", "Screening", "Interviewing", "Offer", "Hired", "Rejected", "Withdrawn"] },
+        { "name": "Stage", "type": "select", "options": ["Applied", "Recruiter Screen", "Manager Screen", "Panel", "Decision", "Offer", "Closed"] },
+        { "name": "Stage Owner", "type": "relation", "database": "People" },
+        { "name": "Applied On", "type": "date" },
+        { "name": "Last Update Sent", "type": "date" },
+        {
+          "name": "Next Update Due",
+          "type": "formula",
+          "formula": "if(or(prop(\"Candidate Status\") == \"Rejected\", prop(\"Candidate Status\") == \"Hired\", prop(\"Candidate Status\") == \"Withdrawn\"), empty(), dateAdd(prop(\"Last Update Sent\"), 3, \"days\"))"
+        },
+        {
+          "name": "Deadline Status",
+          "type": "formula",
+          "formula": "if(empty(prop(\"Next Update Due\")), \"Closed\", if(now() > prop(\"Next Update Due\"), \"Update overdue\", if(dateBetween(prop(\"Next Update Due\"), now(), \"days\") <= 1, \"Update due soon\", \"On track\")))"
+        },
+        { "name": "Candidate Portal Link", "type": "url" },
+        { "name": "Personalized Next Step", "type": "rich_text" }
+      ]
+    },
+    {
+      "name": "Applications",
+      "title": "Application ID",
+      "properties": [
+        { "name": "Application ID", "type": "title" },
+        { "name": "Candidate", "type": "relation", "database": "Candidates" },
+        { "name": "Role", "type": "relation", "database": "Roles" },
+        { "name": "Application Status", "type": "select", "options": ["Active", "Offer", "Hired", "Rejected", "Withdrawn"] },
+        { "name": "Pipeline Stage", "type": "select", "options": ["Applied", "Screen", "Interview Loop", "Final Review", "Offer", "Closed"] },
+        { "name": "Applied Date", "type": "date" },
+        { "name": "Resume URL", "type": "url" },
+        { "name": "Portfolio URL", "type": "url" },
+        { "name": "Scheduler Link", "type": "url" },
+        { "name": "AI Feedback Summary", "type": "rich_text" },
+        { "name": "Decision Recommendation", "type": "select", "options": ["Strong Yes", "Yes", "Mixed", "No", "Strong No"] }
+      ]
+    },
+    {
+      "name": "Interviews",
+      "title": "Interview Title",
+      "properties": [
+        { "name": "Interview Title", "type": "title" },
+        { "name": "Application", "type": "relation", "database": "Applications" },
+        { "name": "Interviewer", "type": "relation", "database": "People" },
+        { "name": "Interview Type", "type": "select", "options": ["Recruiter", "Hiring Manager", "Technical", "Case", "Panel", "Culture"] },
+        { "name": "Scheduled For", "type": "date" },
+        { "name": "Meeting Link", "type": "url" },
+        { "name": "Status", "type": "select", "options": ["To Schedule", "Scheduled", "Completed", "Cancelled", "No Show"] },
+        { "name": "Score", "type": "number" },
+        { "name": "Recommendation", "type": "select", "options": ["Strong Yes", "Yes", "Mixed", "No", "Strong No"] },
+        { "name": "AI Summary", "type": "rich_text" }
+      ]
+    },
+    {
+      "name": "Offers",
+      "title": "Offer ID",
+      "properties": [
+        { "name": "Offer ID", "type": "title" },
+        { "name": "Candidate", "type": "relation", "database": "Candidates" },
+        { "name": "Application", "type": "relation", "database": "Applications" },
+        { "name": "Offer Status", "type": "select", "options": ["Draft", "Internal Approval", "Sent", "Negotiation", "Accepted", "Declined", "Expired"] },
+        { "name": "Base Salary", "type": "number" },
+        { "name": "Equity", "type": "rich_text" },
+        { "name": "Bonus", "type": "number" },
+        { "name": "Start Date Proposed", "type": "date" },
+        { "name": "Offer Document URL", "type": "url" },
+        { "name": "Response Due", "type": "date" }
+      ]
+    },
+    {
+      "name": "Onboarding Journeys",
+      "title": "Journey Name",
+      "properties": [
+        { "name": "Journey Name", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Start Date", "type": "date" },
+        { "name": "Journey Status", "type": "select", "options": ["Preboarding", "Week 1", "Month 1", "Month 2", "Month 3", "Completed", "Blocked"] },
+        { "name": "Personal Goals", "type": "rich_text" },
+        { "name": "Intro Message", "type": "rich_text" },
+        { "name": "New Hire Portal", "type": "url" }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "title": "Task",
+      "properties": [
+        { "name": "Task", "type": "title" },
+        { "name": "Task Type", "type": "select", "options": ["Hiring", "Offer", "Onboarding", "Review", "Compensation", "Offboarding", "Engagement"] },
+        { "name": "Related Person", "type": "relation", "database": "People" },
+        { "name": "Candidate", "type": "relation", "database": "Candidates" },
+        { "name": "Journey", "type": "relation", "database": "Onboarding Journeys" },
+        { "name": "Owner", "type": "relation", "database": "People" },
+        { "name": "Due Date", "type": "date" },
+        { "name": "Status", "type": "select", "options": ["Not Started", "In Progress", "Waiting", "Done", "Cancelled"] },
+        { "name": "Priority", "type": "select", "options": ["High", "Medium", "Low"] },
+        { "name": "Auto-created", "type": "checkbox" }
+      ]
+    },
+    {
+      "name": "Check-ins",
+      "title": "Check-in Name",
+      "properties": [
+        { "name": "Check-in Name", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Manager", "type": "relation", "database": "People" },
+        { "name": "Check-in Type", "type": "select", "options": ["30-day", "60-day", "90-day", "Monthly", "Quarterly", "Stay Interview"] },
+        { "name": "Scheduled Date", "type": "date" },
+        { "name": "Status", "type": "select", "options": ["Planned", "Completed", "Rescheduled", "Missed"] },
+        { "name": "Mood Score", "type": "number" },
+        { "name": "AI Summary", "type": "rich_text" }
+      ]
+    },
+    {
+      "name": "Performance Reviews",
+      "title": "Review Name",
+      "properties": [
+        { "name": "Review Name", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Review Cycle", "type": "select", "options": ["Q1", "Q2", "Q3", "Q4", "Annual"] },
+        { "name": "Review Status", "type": "select", "options": ["Draft", "Self Review", "Manager Review", "Calibration", "Shared", "Closed"] },
+        { "name": "Review Due Date", "type": "date" },
+        { "name": "Self Review", "type": "rich_text" },
+        { "name": "Manager Review", "type": "rich_text" },
+        { "name": "Rating", "type": "number" },
+        { "name": "Promotion Recommendation", "type": "select", "options": ["No", "Watchlist", "Yes"] },
+        { "name": "AI Summary", "type": "rich_text" }
+      ]
+    },
+    {
+      "name": "Compensation Events",
+      "title": "Event Name",
+      "properties": [
+        { "name": "Event Name", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Event Type", "type": "select", "options": ["Salary Review", "Promotion", "Spot Bonus", "Equity Refresh"] },
+        { "name": "Effective Date", "type": "date" },
+        { "name": "Current Salary", "type": "number" },
+        { "name": "Proposed Salary", "type": "number" },
+        { "name": "Approval Status", "type": "select", "options": ["Draft", "Manager Approved", "Finance Approved", "People Approved", "Finalized", "Declined"] }
+      ]
+    },
+    {
+      "name": "Recognition",
+      "title": "Recognition Title",
+      "properties": [
+        { "name": "Recognition Title", "type": "title" },
+        { "name": "From", "type": "relation", "database": "People" },
+        { "name": "To", "type": "relation", "database": "People" },
+        { "name": "Category", "type": "select", "options": ["Customer Love", "Teamwork", "Craft", "Leadership", "Ownership"] },
+        { "name": "Message", "type": "rich_text" },
+        { "name": "Date", "type": "date" }
+      ]
+    },
+    {
+      "name": "Pulse Surveys",
+      "title": "Survey Response",
+      "properties": [
+        { "name": "Survey Response", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Survey Type", "type": "select", "options": ["Weekly Pulse", "Monthly Pulse", "Onboarding Pulse", "Exit Pulse"] },
+        { "name": "Submitted At", "type": "date" },
+        { "name": "eNPS Style Score", "type": "number" },
+        { "name": "Energy Score", "type": "number" },
+        { "name": "Clarity Score", "type": "number" },
+        { "name": "Support Score", "type": "number" },
+        { "name": "Free Text", "type": "rich_text" },
+        { "name": "AI Theme Summary", "type": "rich_text" }
+      ]
+    },
+    {
+      "name": "Offboarding Cases",
+      "title": "Case Name",
+      "properties": [
+        { "name": "Case Name", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Offboarding Type", "type": "select", "options": ["Resignation", "Mutual Separation", "End of Contract"] },
+        { "name": "Notice Received", "type": "date" },
+        { "name": "Last Working Day", "type": "date" },
+        { "name": "Status", "type": "select", "options": ["Open", "Knowledge Capture", "Exit Interview", "Access Removal", "Complete"] },
+        { "name": "AI Exit Summary", "type": "rich_text" },
+        { "name": "Alumni Eligible", "type": "checkbox" }
+      ]
+    },
+    {
+      "name": "Knowledge Transfers",
+      "title": "Transfer Title",
+      "properties": [
+        { "name": "Transfer Title", "type": "title" },
+        { "name": "Employee", "type": "relation", "database": "People" },
+        { "name": "Systems Owned", "type": "rich_text" },
+        { "name": "Key Contacts", "type": "rich_text" },
+        { "name": "Open Risks", "type": "rich_text" },
+        { "name": "Documents Linked", "type": "url" },
+        { "name": "Status", "type": "select", "options": ["Draft", "In Review", "Complete"] }
+      ]
+    },
+    {
+      "name": "Alumni",
+      "title": "Alumni Name",
+      "properties": [
+        { "name": "Alumni Name", "type": "title" },
+        { "name": "Person", "type": "relation", "database": "People" },
+        { "name": "Exit Date", "type": "date" },
+        { "name": "Last Role", "type": "rich_text" },
+        { "name": "Rehire Eligible", "type": "checkbox" },
+        { "name": "Alumni Group Joined", "type": "checkbox" }
+      ]
+    },
+    {
+      "name": "Templates & Playbooks",
+      "title": "Template Name",
+      "properties": [
+        { "name": "Template Name", "type": "title" },
+        { "name": "Template Type", "type": "select", "options": ["Offer Letter", "Email", "Slack", "Checklist", "Review", "Survey"] },
+        { "name": "Audience", "type": "select", "options": ["Candidate", "Employee", "Manager", "HR"] },
+        { "name": "Trigger Event", "type": "select", "options": ["Application Received", "Interview Scheduled", "Offer Sent", "Start Date Set", "Review Due", "Exit Logged"] },
+        { "name": "Subject", "type": "rich_text" },
+        { "name": "Body", "type": "rich_text" },
+        { "name": "Active", "type": "checkbox" }
+      ]
+    },
+    {
+      "name": "Automation Log",
+      "title": "Run Name",
+      "properties": [
+        { "name": "Run Name", "type": "title" },
+        { "name": "Workflow", "type": "select", "options": ["Hiring Update", "Interview Reminder", "Offer Send", "Onboarding Kickoff", "Check-in Generator", "Review Summary", "Offboarding Start", "Culture Reminder"] },
+        { "name": "Entity Type", "type": "select", "options": ["Candidate", "Application", "Interview", "Employee", "Review", "Offboarding"] },
+        { "name": "Entity ID", "type": "rich_text" },
+        { "name": "Triggered At", "type": "date" },
+        { "name": "Result", "type": "select", "options": ["Success", "Warning", "Error"] },
+        { "name": "Details", "type": "rich_text" }
+      ]
+    }
+  ],
+  "automation_workflows": [
+    {
+      "name": "Application Received",
+      "trigger": "New candidate form submission or new Candidates page",
+      "steps": [
+        "Create or update People record",
+        "Create Application record",
+        "Set Last Update Sent to current time",
+        "Generate acknowledgement email",
+        "Send Slack alert to role owner",
+        "Write Automation Log"
+      ]
+    },
+    {
+      "name": "Candidate Update Guardrail",
+      "trigger": "Daily schedule",
+      "steps": [
+        "Find candidates with update due soon or overdue",
+        "Draft candidate-safe update",
+        "Notify owner in Slack",
+        "Optionally send message automatically",
+        "Write Automation Log"
+      ]
+    },
+    {
+      "name": "Interview Reminder and Summary",
+      "trigger": "24h before interview and after interview completion",
+      "steps": [
+        "Send candidate and interviewer reminders",
+        "Collect feedback",
+        "Chase missing feedback",
+        "Summarize with OpenAI",
+        "Update Applications AI Feedback Summary"
+      ]
+    },
+    {
+      "name": "Offer to Onboarding Kickoff",
+      "trigger": "Offer accepted",
+      "steps": [
+        "Convert candidate to employee",
+        "Create onboarding journey",
+        "Assign buddy",
+        "Generate onboarding tasks",
+        "Create 30, 60, 90 day and monthly check-ins",
+        "Send welcome communications"
+      ]
+    },
+    {
+      "name": "Performance Review Summary",
+      "trigger": "Review submissions complete",
+      "steps": [
+        "Gather self, manager, and peer inputs",
+        "Summarize with OpenAI",
+        "Generate action recommendations",
+        "Update dashboard and reminders"
+      ]
+    },
+    {
+      "name": "Resignation to Offboarding",
+      "trigger": "New Offboarding Case or employee marked exiting",
+      "steps": [
+        "Create task checklist",
+        "Create knowledge transfer page",
+        "Schedule exit interview",
+        "Summarize exit notes",
+        "Create Alumni record if eligible"
+      ]
+    }
+  ],
+  "prompts": {
+    "interview_summary": "Summarize hiring feedback into concise summary, strengths, concerns, recommendation, and candidate-safe feedback. Use only provided evidence.",
+    "review_summary": "Summarize self review and manager review into wins, growth areas, support requests, manager actions, and promotion signal.",
+    "exit_summary": "Summarize exit notes into reasons for exit, preventable issues, process themes, manager coaching suggestions, and alumni recommendation."
+  }
+}

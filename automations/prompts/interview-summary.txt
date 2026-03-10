@@ -1,0 +1,12 @@
+Summarize the interview feedback for a hiring decision.
+Return valid JSON with:
+- summary
+- strengths
+- concerns
+- recommendation
+- candidate_safe_feedback
+
+Constraints:
+- Use only the provided evidence.
+- Keep tone empathetic and direct.
+- Do not invent missing detail.

@@ -1,0 +1,54 @@
+{
+  "name": "EchoHR - Review and Appraisal Evidence Sync",
+  "platform": "Make",
+  "description": "Before a review or appraisal is shared, collect linked goals, achievements, and overdue feedback signals so no employee is left without clarity.",
+  "trigger": {
+    "app": "Scheduler",
+    "event": "Daily at 08:30"
+  },
+  "modules": [
+    {
+      "id": "notion_query_reviews",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Performance Reviews",
+        "filter": "Review Status in [Self Review, Manager Review, Shared]"
+      }
+    },
+    {
+      "id": "notion_fetch_goals",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Goals",
+        "filter": "Feedback Status in [Feedback due soon, Feedback overdue]"
+      }
+    },
+    {
+      "id": "http_review_summary",
+      "app": "HTTP",
+      "action": "Make a request",
+      "config": {
+        "url": "http://localhost:8787/summaries/review",
+        "method": "POST"
+      }
+    },
+    {
+      "id": "slack_manager_nudge",
+      "app": "Slack",
+      "action": "Create a message",
+      "config": {
+        "text": "Review/appraisal is missing explicit goal feedback. Suggested summary attached."
+      }
+    },
+    {
+      "id": "notion_log",
+      "app": "Notion",
+      "action": "Create database item",
+      "config": {
+        "database": "Automation Log"
+      }
+    }
+  ]
+}

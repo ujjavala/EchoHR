@@ -1,0 +1,4 @@
+.env
+.notion-oauth-session.json
+echohr-install-output.json
+.echohr-install-state.json

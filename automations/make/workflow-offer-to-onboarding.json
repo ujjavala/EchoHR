@@ -1,0 +1,67 @@
+{
+  "name": "EchoHR - Offer Accepted to Onboarding",
+  "platform": "Make",
+  "description": "Converts a candidate into an employee journey, assigns a buddy, and creates onboarding tasks and check-ins.",
+  "trigger": {
+    "app": "Notion",
+    "event": "Watch database items",
+    "database": "Offers",
+    "filter": "Offer Status = Accepted"
+  },
+  "modules": [
+    {
+      "id": "notion_update_person",
+      "app": "Notion",
+      "action": "Update database item",
+      "config": {
+        "database": "People",
+        "fieldUpdates": {
+          "Lifecycle Type": "Employee",
+          "Employment Status": "Active"
+        }
+      }
+    },
+    {
+      "id": "notion_create_journey",
+      "app": "Notion",
+      "action": "Create database item",
+      "config": {
+        "database": "Onboarding Journeys"
+      }
+    },
+    {
+      "id": "notion_create_tasks",
+      "app": "Notion",
+      "action": "Bulk create database items",
+      "config": {
+        "database": "Tasks",
+        "template": "Onboarding - New Hire Portal"
+      }
+    },
+    {
+      "id": "notion_create_checkins",
+      "app": "Notion",
+      "action": "Bulk create database items",
+      "config": {
+        "database": "Check-ins",
+        "scheduleOffsetsDays": [
+          30,
+          60,
+          90,
+          120,
+          150,
+          180
+        ]
+      }
+    },
+    {
+      "id": "slack_welcome_note",
+      "app": "Slack",
+      "action": "Create a message",
+      "config": {
+        "channel": "#team",
+        "text": "New hire onboarding created with buddy and check-ins."
+      }
+    }
+  ]
+}

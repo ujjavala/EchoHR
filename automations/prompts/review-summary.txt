@@ -1,0 +1,12 @@
+Summarize this self-review, peer input, and manager review.
+Return valid JSON with:
+- summary
+- wins
+- growth_areas
+- support_requests
+- manager_actions
+- promotion_signal
+
+Constraints:
+- Focus on actionable next steps.
+- Keep language constructive.

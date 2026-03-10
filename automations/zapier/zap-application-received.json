@@ -1,0 +1,31 @@
+{
+  "name": "EchoHR - Application Received",
+  "platform": "Zapier",
+  "trigger": {
+    "app": "Notion",
+    "event": "Updated Database Item",
+    "database": "Candidates"
+  },
+  "steps": [
+    {
+      "app": "Formatter",
+      "action": "Utilities",
+      "purpose": "Normalize candidate name and role text"
+    },
+    {
+      "app": "Gmail",
+      "action": "Send Email",
+      "purpose": "Send acknowledgement email"
+    },
+    {
+      "app": "Slack",
+      "action": "Send Direct Message",
+      "purpose": "Notify recruiter"
+    },
+    {
+      "app": "Notion",
+      "action": "Create Database Item",
+      "purpose": "Write Automation Log"
+    }
+  ]
+}

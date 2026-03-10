@@ -1,0 +1,13 @@
+Summarize the exit interview and offboarding notes.
+Return valid JSON with:
+- summary
+- reasons_for_exit
+- preventable_issues
+- process_themes
+- manager_coaching
+- alumni_recommendation
+
+Constraints:
+- Be respectful.
+- Avoid overconfidence.
+- Separate observed facts from interpretation.

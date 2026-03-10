@@ -1,0 +1,55 @@
+{
+  "name": "EchoHR - Lifecycle Feedback Guardrail",
+  "platform": "Make",
+  "description": "Daily guardrail across candidates, onboarding, goals, reviews, offboarding, and alumni so no person is left without a visible next step.",
+  "trigger": {
+    "app": "Scheduler",
+    "event": "Every weekday at 09:00"
+  },
+  "modules": [
+    {
+      "id": "query_candidates",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Candidates",
+        "filter": "Deadline Status in [Update due soon, Update overdue]"
+      }
+    },
+    {
+      "id": "query_goals",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Goals",
+        "filter": "Feedback Status in [Feedback due soon, Feedback overdue]"
+      }
+    },
+    {
+      "id": "query_reviews",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Performance Reviews",
+        "filter": "Review Readiness in [Due this week, Overdue]"
+      }
+    },
+    {
+      "id": "query_offboarding",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Offboarding Cases",
+        "filter": "Status != Complete"
+      }
+    },
+    {
+      "id": "slack_nudges",
+      "app": "Slack",
+      "action": "Create a message",
+      "config": {
+        "text": "Lifecycle feedback due. EchoHR expects a visible next step and explicit date."
+      }
+    }
+  ]
+}

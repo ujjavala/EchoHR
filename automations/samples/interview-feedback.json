@@ -1,0 +1,18 @@
+{
+  "candidate_name": "Asha Patel",
+  "role": "Senior Product Designer",
+  "stage": "Panel",
+  "feedback": [
+    {
+      "interviewer": "Maya Chen",
+      "recommendation": "Yes",
+      "strengths": [
+        "Strong communication",
+        "Clear product thinking"
+      ],
+      "concerns": [
+        "Needs stronger design systems examples"
+      ]
+    }
+  ]
+}

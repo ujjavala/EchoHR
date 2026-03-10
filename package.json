@@ -1,0 +1,14 @@
+{
+  "name": "echohr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "create": "node src/create-echohr.mjs",
+    "demo": "node src/create-echohr.mjs --seed-demo",
+    "automation-server": "node src/automation-server.mjs",
+    "notion-oauth:url": "node src/notion-oauth.mjs url",
+    "notion-oauth:exchange": "node src/notion-oauth.mjs exchange",
+    "check": "node --check src/create-echohr.mjs && node --check src/echohr-config.mjs && node --check src/lib/notion.mjs && node --check src/lib/env.mjs && node --check src/automation-server.mjs && node --check src/notion-oauth.mjs"
+  }
+}

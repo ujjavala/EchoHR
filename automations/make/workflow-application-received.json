@@ -1,0 +1,59 @@
+{
+  "name": "EchoHR - Application Received",
+  "platform": "Make",
+  "description": "Creates or updates the person record, opens an application, sends acknowledgement, and starts the no-ghosting timer.",
+  "trigger": {
+    "app": "Notion",
+    "event": "Watch database items",
+    "database": "Candidates"
+  },
+  "modules": [
+    {
+      "id": "notion_search_person",
+      "app": "Notion",
+      "action": "Search objects",
+      "config": {
+        "query": "{{candidate.email}}"
+      }
+    },
+    {
+      "id": "notion_upsert_person",
+      "app": "Notion",
+      "action": "Create or update database item",
+      "config": {
+        "database": "People",
+        "fields": [
+          "Name",
+          "Work Email",
+          "Lifecycle Type"
+        ]
+      }
+    },
+    {
+      "id": "notion_create_application",
+      "app": "Notion",
+      "action": "Create database item",
+      "config": {
+        "database": "Applications"
+      }
+    },
+    {
+      "id": "gmail_send_ack",
+      "app": "Gmail",
+      "action": "Send an email",
+      "config": {
+        "subject": "We received your EchoHR application",
+        "bodyTemplate": "Candidate - Application Acknowledgement"
+      }
+    },
+    {
+      "id": "slack_notify_recruiter",
+      "app": "Slack",
+      "action": "Create a message",
+      "config": {
+        "channel": "#hiring",
+        "text": "New candidate received. Owner and update SLA are now active."
+      }
+    }
+  ]
+}

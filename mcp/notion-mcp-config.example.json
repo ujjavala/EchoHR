@@ -1,0 +1,15 @@
+{
+  "server": "notion-mcp",
+  "purpose": "EchoHR day-to-day lifecycle operations",
+  "recommended_workflows": [
+    "candidate-no-ghosting-sweep",
+    "review-evidence-sync",
+    "appraisal-readiness-check",
+    "onboarding-support-scan",
+    "offboarding-and-alumni-follow-through"
+  ],
+  "notes": [
+    "Use MCP for ongoing operational updates after the workspace is provisioned.",
+    "Use the direct Notion API seeder for first-time bootstrap and deterministic demo setup."
+  ]
+}

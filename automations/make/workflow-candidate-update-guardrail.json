@@ -1,0 +1,45 @@
+{
+  "name": "EchoHR - Candidate Update Guardrail",
+  "platform": "Make",
+  "description": "Runs daily to prevent ghosting by notifying owners and optionally generating candidate-safe updates.",
+  "trigger": {
+    "app": "Scheduler",
+    "event": "Every weekday at 09:00"
+  },
+  "modules": [
+    {
+      "id": "notion_query_due_candidates",
+      "app": "Notion",
+      "action": "Search database items",
+      "config": {
+        "database": "Candidates",
+        "filter": "Deadline Status in [Update due soon, Update overdue]"
+      }
+    },
+    {
+      "id": "http_generate_summary",
+      "app": "HTTP",
+      "action": "Make a request",
+      "config": {
+        "url": "http://localhost:8787/summaries/interview",
+        "method": "POST"
+      }
+    },
+    {
+      "id": "slack_dm_owner",
+      "app": "Slack",
+      "action": "Create a message",
+      "config": {
+        "text": "Candidate update due. Suggested note attached."
+      }
+    },
+    {
+      "id": "notion_log",
+      "app": "Notion",
+      "action": "Create database item",
+      "config": {
+        "database": "Automation Log"
+      }
+    }
+  ]
+}

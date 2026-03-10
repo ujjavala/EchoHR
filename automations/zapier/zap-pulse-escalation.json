@@ -1,0 +1,30 @@
+{
+  "name": "EchoHR - Pulse Escalation",
+  "platform": "Zapier",
+  "trigger": {
+    "app": "Typeform",
+    "event": "New Entry"
+  },
+  "steps": [
+    {
+      "app": "Notion",
+      "action": "Create Database Item",
+      "purpose": "Store Pulse Survey response"
+    },
+    {
+      "app": "Webhooks by Zapier",
+      "action": "POST",
+      "purpose": "Call local EchoHR summary server at /summaries/exit or /summaries/review"
+    },
+    {
+      "app": "Paths",
+      "action": "Conditional Branch",
+      "purpose": "Escalate low scores privately"
+    },
+    {
+      "app": "Slack",
+      "action": "Send Direct Message",
+      "purpose": "Notify People partner"
+    }
+  ]
+}
