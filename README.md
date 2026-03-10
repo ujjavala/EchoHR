@@ -143,6 +143,35 @@ curl -X POST http://127.0.0.1:8787/slack/notify \
   -d '{"text":"EchoHR ping","channel":"#general"}'
 ```
 
+Figma webhook (Ready for Review → Notion task + Slack):
+```bash
+cat <<'JSON' >/tmp/figma.json
+{
+  "comment": {
+    "message": "Ready for Review",
+    "file_key": "YOUR_FILE_KEY",
+    "client_meta": { "node_id": "0:1" },
+    "file_url": "https://www.figma.com/file/YOUR_FILE_KEY/Name"
+  }
+}
+JSON
+curl -X POST http://127.0.0.1:8787/webhooks/figma \
+  -H "Content-Type: application/json" \
+  -d @/tmp/figma.json
+```
+
+Meeting notes → AI feedback:
+```bash
+curl -X POST http://127.0.0.1:8787/webhooks/meeting-notes \
+  -H "Content-Type: application/json" \
+  -d '{"kind":"interview","interviewId":"<interview_page_id>","notes":"Candidate demonstrated strong systems thinking..."}'
+```
+
+Feedback sweep (interviews completed >7 days ago with no feedback):
+```bash
+curl -X POST http://127.0.0.1:8787/ops/feedback-sweep
+```
+
 Notion webhook automations:
 - New Candidate → Application + SLA Task  
   ```bash

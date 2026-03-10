@@ -1,5 +1,6 @@
 import { buildReviewTaskProps, todayISO } from "../lib/feedback.mjs";
 import { sendSlackMessage } from "../lib/slack.mjs";
+import { TASK_PRIORITY, TASK_STATUS, TASK_TYPES } from "../lib/constants.mjs";
 
 export async function handleFigmaWebhook(body, state, notionClient) {
   const events = body?.events || (body?.event ? [body.event] : [body]).filter(Boolean);
@@ -23,9 +24,14 @@ export async function handleFigmaWebhook(body, state, notionClient) {
     }
 
     const due = todayISO();
+    const props = buildReviewTaskProps({
+      title: `Review: ${nodeId || fileKey}`,
+      dueDate: due,
+      fileUrl
+    });
     const task = await notionClient.createRow({
       dataSourceId: tasksDs,
-      properties: buildReviewTaskProps({ title: `Review: ${nodeId || fileKey}`, dueDate: due, fileUrl })
+      properties: props
     });
 
     await sendSlackMessage({

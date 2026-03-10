@@ -13,6 +13,9 @@ Note: You can also send Figma comment payloads to `POST /webhooks/figma` (automa
 
 MCP servers: Notion, Slack (optional Calendar if you add follow-up meetings). You can also hit `POST /webhooks/meeting-notes` with `{kind:'interview'|'review', interviewId|reviewId, notes}`.
 
+Auto reminders:
+- `POST /ops/feedback-sweep` finds interviews completed >7 days ago with no feedback and pings Slack (and EMAIL_WEBHOOK if set).
+
 ## Candidate no-ghosting sweep
 “In EchoHR Candidates, find active candidates whose Last Update Sent is >2 days ago. Draft candidate-safe updates, set Personalized Next Step, and notify Stage Owner in Slack. If missing Application, create one.”
 

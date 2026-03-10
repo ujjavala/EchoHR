@@ -1,4 +1,5 @@
 import { pageTitleProperty, selectProperty, dateProperty } from "./notion.mjs";
+import { TASK_PRIORITY, TASK_STATUS, TASK_TYPES } from "./constants.mjs";
 
 export function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -7,10 +8,10 @@ export function todayISO() {
 export function buildReviewTaskProps({ title, dueDate, fileUrl }) {
   return {
     Task: pageTitleProperty(title),
-    "Task Type": selectProperty("Review"),
+    "Task Type": selectProperty(TASK_TYPES.REVIEW),
     "Due Date": dateProperty(dueDate),
-    Status: selectProperty("Not Started"),
-    Priority: selectProperty("High"),
+    Status: selectProperty(TASK_STATUS.NOT_STARTED),
+    Priority: selectProperty(TASK_PRIORITY.HIGH),
     "Empathy Note": {
       rich_text: [
         { type: "text", text: { content: "From Figma comment tagged Ready for Review." } },
