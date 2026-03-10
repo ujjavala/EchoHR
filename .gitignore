@@ -2,3 +2,7 @@
 .notion-oauth-session.json
 echohr-install-output.json
 .echohr-install-state.json
+node_modules
+npm-debug.log*
+.DS_Store
+.idea

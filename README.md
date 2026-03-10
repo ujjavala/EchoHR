@@ -28,6 +28,7 @@ It creates an `EchoHR` workspace structure inside Notion with:
 - Notion MCP guidance and reusable operational prompts
 - a local automation server for OpenAI and Slack glue
 - Make and Zapier starter scenario manifests
+- versioned installs (`EchoHR HQ vN (latest)`) with automatic unarchive-and-retitle of older versions on `--force-new`
 
 ## What you need
 
@@ -87,6 +88,12 @@ Run the local automation server:
 npm run automation-server
 ```
 
+Recreate everything from scratch (new versioned root, refreshed schemas, rollups, demo data):
+
+```bash
+npm run demo -- --force-new
+```
+
 ## Output
 
 After a successful run, the script writes local IDs and URLs to:
@@ -112,7 +119,8 @@ Notion MCP usage:
 
 - use Notion MCP for ongoing record updates, summaries, reminders, dashboard maintenance, and lifecycle follow-through
 - use the seeder in this repo for initial workspace bootstrap, because it is easier to keep deterministic than conversational MCP creation
-- use MCP prompts in `mcp/notion-mcp-playbook.md` to drive candidate updates, review evidence sync, offboarding follow-up, and zero-ghosting checks
+- MCP drives the Notion `data_source` endpoints for relations, rollups, and queries (no legacy `database_id` queries), enabling reliable dual relations and rollups
+- use MCP prompts in `mcp/notion-mcp-playbook.md` to drive candidate updates, review evidence sync, offboarding follow-up, mood/celebration pings, and zero-ghosting checks
 
 Internal Notion integration guidance:
 
@@ -128,3 +136,4 @@ Internal Notion integration guidance:
 - Notion still does not expose full view management through the API, so dashboard view layouts remain a short manual pass in the app.
 - Formula properties cannot be updated after creation via the API, so formulas are implemented only where they can be created safely during provisioning.
 - The local automation server exposes `GET /health`, `POST /summaries/interview`, `POST /summaries/review`, `POST /summaries/exit`, `POST /slack/notify`, `POST /webhooks/notion`, and `POST /webhooks/slack`.
+- Rollups are created through the `data_source` endpoint (with database fallback) after schema refresh; if you see rollup skips, run `npm run demo -- --force-new` to regenerate a clean version.
