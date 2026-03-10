@@ -179,7 +179,10 @@ Notion hosts an MCP server. Point your MCP-capable client at it:
 {
   "mcpServers": {
     "Notion": { "type": "http", "url": "https://mcp.notion.com/mcp" },
-    "NotionSseFallback": { "type": "sse", "url": "https://mcp.notion.com/sse" }
+    "NotionSseFallback": { "type": "sse", "url": "https://mcp.notion.com/sse" },
+    "Figma": { "type": "http", "url": "https://mcp.figma.com/mcp" },
+    "Slack": { "type": "http", "url": "https://mcp.slack.com/mcp" },
+    "Calendar": { "type": "http", "url": "https://mcp.calendar.com/mcp" }
   }
 }
 ```

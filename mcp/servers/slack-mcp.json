@@ -1,0 +1,6 @@
+{
+  "name": "Slack",
+  "type": "http",
+  "url": "https://mcp.slack.com/mcp",
+  "notes": "Use your Slack bot token when prompted. Supports chat.postMessage, channel lookup, and basic reactions."
+}

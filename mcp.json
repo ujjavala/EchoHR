@@ -7,6 +7,18 @@
     "NotionSseFallback": {
       "type": "sse",
       "url": "https://mcp.notion.com/sse"
+    },
+    "Figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "Slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/mcp"
+    },
+    "Calendar": {
+      "type": "http",
+      "url": "https://mcp.calendar.com/mcp"
     }
   },
   "notes": [

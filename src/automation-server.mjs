@@ -13,6 +13,7 @@ const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || "";
 const SLACK_DEFAULT_CHANNEL = process.env.SLACK_DEFAULT_CHANNEL || "";
 const NOTION_TOKEN = process.env.NOTION_TOKEN || "";
 const NOTION_VERSION = process.env.NOTION_VERSION || "2025-09-03";
+const FIGMA_TOKEN = process.env.FIGMA_TOKEN || "";
 
 let cachedInstallState = null;
 let cachedNotionClient = null;
@@ -104,7 +105,7 @@ async function createApplicationFromCandidate(candidatePageId) {
     });
   }
 
-  return { ok: true, createdApplicationId: appId, candidateTitle: title };
+  return { ok: true, createdApplicationId: appId, candidateTitle: title, stageOwnerId: stageOwnerRel[0]?.id };
 }
 
 async function createOnboardingFromAcceptedOffer(offerPageId) {
@@ -183,7 +184,15 @@ async function processNotionWebhook(body) {
 
     // Candidate created -> Application + SLA task
     if (dsId === state.databases?.candidates?.dataSourceId && event?.type === "page_created") {
-      results.push(await createApplicationFromCandidate(pageId));
+      const res = await createApplicationFromCandidate(pageId);
+      results.push(res);
+      // Optional Slack notify
+      if (SLACK_BOT_TOKEN) {
+        await sendSlackMessage({
+          text: `New candidate processed: ${res.candidateTitle}. Application created (${res.createdApplicationId}). SLA task added for stage owner.`,
+          channel: SLACK_DEFAULT_CHANNEL
+        });
+      }
       continue;
     }
 
@@ -192,12 +201,77 @@ async function processNotionWebhook(body) {
       const offer = await notion().request(`/v1/pages/${pageId}`);
       const status = offer.properties?.["Offer Status"]?.select?.name || "";
       if (status === "Accepted") {
-        results.push(await createOnboardingFromAcceptedOffer(pageId));
+        const res = await createOnboardingFromAcceptedOffer(pageId);
+        results.push(res);
+        if (SLACK_BOT_TOKEN) {
+          await sendSlackMessage({
+            text: `Offer accepted: ${pickTitle(offer)}. Onboarding journey created and first 3 monthly check-ins scheduled.`,
+            channel: SLACK_DEFAULT_CHANNEL
+          });
+        }
         continue;
       }
     }
 
     results.push({ ok: true, skipped: true, reason: "No matching automation" });
+  }
+  return results;
+}
+
+async function createTaskFromFigmaComment({ fileKey, message, nodeId, fileUrl }) {
+  const state = await loadInstallState();
+  if (!state) return { ok: false, skipped: true, reason: "No install state" };
+  const tasksDs = state.databases?.tasks?.dataSourceId;
+  if (!tasksDs) return { ok: false, skipped: true, reason: "Missing Tasks data source ID" };
+
+  const notionClient = notion();
+  const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const task = await notionClient.createRow({
+    dataSourceId: tasksDs,
+    properties: {
+      Task: pageTitleProperty(`Review: ${nodeId || fileKey}`),
+      "Task Type": selectProperty("Review"),
+      "Due Date": dateProperty(due),
+      Status: selectProperty("Not Started"),
+      Priority: selectProperty("High"),
+      "Empathy Note": {
+        rich_text: [
+          { type: "text", text: { content: "From Figma comment tagged Ready for Review." } },
+          { type: "text", text: { content: ` ${fileUrl}` } }
+        ]
+      }
+    }
+  });
+
+  if (SLACK_BOT_TOKEN) {
+    await sendSlackMessage({
+      text: `Created review task from Figma: ${task.url || task.id}\nComment: ${message}`,
+      channel: SLACK_DEFAULT_CHANNEL
+    });
+  }
+
+  return { ok: true, taskUrl: task.url || task.id };
+}
+
+async function handleFigmaWebhook(body) {
+  if (!FIGMA_TOKEN) return { ok: false, skipped: true, reason: "FIGMA_TOKEN not set" };
+  const events = body?.events || (body?.event ? [body.event] : [body]).filter(Boolean);
+  const results = [];
+  for (const event of events) {
+    const comment = event?.comment || event?.data?.comment || event;
+    const message = comment?.message || "";
+    if (!message.toLowerCase().includes("ready for review")) {
+      results.push({ ok: true, skipped: true, reason: "No Ready for Review tag" });
+      continue;
+    }
+    const fileKey = comment?.file_key || comment?.fileKey || comment?.fileId;
+    const nodeId = comment?.client_meta?.node_id || comment?.node_id || "frame";
+    const fileUrl = comment?.file_url || `https://www.figma.com/file/${fileKey}`;
+    if (!fileKey) {
+      results.push({ ok: false, skipped: true, reason: "Missing file key" });
+      continue;
+    }
+    results.push(await createTaskFromFigmaComment({ fileKey, message, nodeId, fileUrl }));
   }
   return results;
 }
@@ -360,6 +434,12 @@ const server = createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname === "/webhooks/notion") {
       const body = await readBody(request);
       const results = await processNotionWebhook(body);
+      return json(response, 200, { ok: true, processed: results });
+    }
+
+    if (request.method === "POST" && url.pathname === "/webhooks/figma") {
+      const body = await readBody(request);
+      const results = await handleFigmaWebhook(body);
       return json(response, 200, { ok: true, processed: results });
     }
 

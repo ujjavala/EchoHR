@@ -1,0 +1,6 @@
+{
+  "name": "Figma",
+  "type": "http",
+  "url": "https://mcp.figma.com/mcp",
+  "notes": "Use your Figma personal access token (PAT) when the client prompts. Supports file, comment, and node lookups."
+}

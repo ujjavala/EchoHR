@@ -1,0 +1,6 @@
+{
+  "name": "Calendar",
+  "type": "http",
+  "url": "https://mcp.calendar.com/mcp",
+  "notes": "Use Google/Outlook auth when prompted. Supports creating events with attendees and links."
+}

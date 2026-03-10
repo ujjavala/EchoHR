@@ -469,6 +469,38 @@ function checklistBlocks(registry) {
   ];
 }
 
+function agentOpsBlocks(sectionPages) {
+  const hiringUrl = sectionPages.hiring.url;
+  const automationUrl = sectionPages.automation.url;
+  return [
+    heading(2, "Agent Ops Menu"),
+    paragraph("Copy one of these into your MCP client. These run best when Notion, Slack, and Calendar MCP servers are connected."),
+    heading(3, "Figma comment → Task → Review meeting → Slack"),
+    callout(
+      "“Fetch latest Figma comments tagged Ready for Review. For each: create a Notion Task in EchoHR Tasks (type Review), set Due Date tomorrow, link the Figma URL. Create a calendar event tomorrow 10am with attendees <emails>. Post a Slack update with task link + Figma link.”",
+      "🎨"
+    ),
+    heading(3, "Candidate no-ghosting sweep"),
+    callout(
+      "“In EchoHR Candidates, find active candidates whose Last Update Sent is >2 days ago. Draft candidate-safe updates, set Personalized Next Step, and notify Stage Owner in Slack. If missing Application, create one.”",
+      "💬"
+    ),
+    heading(3, "Offer → Onboarding"),
+    callout(
+      "“For offers in Accepted, ensure an Onboarding Journey exists, create first 3 monthly Check-ins, and DM the manager/buddy in Slack with dates.”",
+      "🚀"
+    ),
+    heading(3, "Growth snapshot"),
+    callout(
+      "“Summarize Goals, Achievements, and latest Review for each active employee; post a Slack digest; create calendar holds for any review due this week.”",
+      "📈"
+    ),
+    paragraph("Links:"),
+    bulleted(`Hiring Command Center: ${hiringUrl}`),
+    bulleted(`Automation Ops: ${automationUrl}`)
+  ];
+}
+
 async function createDatabases(notion, sectionPages) {
   const registry = {};
 
@@ -1267,6 +1299,11 @@ async function main() {
         parent: { type: "page_id", page_id: root.id },
         title: "View Setup Checklist (click-through)",
         children: checklistBlocks(registry)
+      });
+      await notion.createPage({
+        parent: { type: "page_id", page_id: root.id },
+        title: "Agent Ops Menu",
+        children: agentOpsBlocks(sectionPages)
       });
       const viewGuideTitle = viewGuide.title || "Setup Views (5–10 min)";
       for (const page of Object.values(sectionPages)) {
