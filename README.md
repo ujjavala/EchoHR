@@ -113,6 +113,63 @@ Make/Zapier/Figma glue:
 
 - Example scenario: `automations/make/figma-status-to-notion.json` — when a Figma frame hits “Ready for Review”, create/update a Notion Task, attach to the right Check-in, and post to Slack with a thumbnail.
 
+UI & dashboards:
+- Notion API can’t create views; use the recipes in `docs/views-and-dashboards.md` to add boards, timelines, galleries, and embeds so the workspace feels like a product, not a spreadsheet. (Includes which properties, grouping, filters, and suggested charts.)
+
+## How to test the app (end-to-end)
+
+Prereqs:
+- Run `npm run demo -- --force-new` at least once to generate `.echohr-install-state.json`.
+- Set `NOTION_TOKEN` in `.env` (internal integration secret). Optional: `OPENAI_API_KEY`, `SLACK_BOT_TOKEN`, `FIGMA_TOKEN`.
+
+Start the automation server:
+```bash
+npm run automation-server
+```
+
+Health check:
+```bash
+curl http://127.0.0.1:8787/health
+```
+
+Slack test (optional):
+```bash
+curl -X POST http://127.0.0.1:8787/slack/notify \
+  -H "Content-Type: application/json" \
+  -d '{"text":"EchoHR ping","channel":"#general"}'
+```
+
+Notion webhook automations:
+- New Candidate → Application + SLA Task  
+  ```bash
+  curl -X POST http://127.0.0.1:8787/webhooks/notion \
+    -H "Content-Type: application/json" \
+    -d '{"event":{"type":"page_created","data":{"id":"<candidate_page_id>","parent":{"data_source_id":"<candidates_ds_id>"}}}}'
+  ```
+- Offer Accepted → Onboarding Journey + 3 monthly Check-ins (set Offer Status=Accepted in Notion first)  
+  ```bash
+  curl -X POST http://127.0.0.1:8787/webhooks/notion \
+    -H "Content-Type: application/json" \
+    -d '{"event":{"type":"page_updated","data":{"id":"<offer_page_id>","parent":{"data_source_id":"<offers_ds_id>"}}}}'
+  ```
+
+AI summaries (writes JSON back for you to paste into Notion):
+```bash
+curl -X POST http://127.0.0.1:8787/summaries/interview \
+  -H "Content-Type: application/json" \
+  -d '{"candidate":"Asha Patel","notes":"..." }'
+```
+(Similarly: `/summaries/review`, `/summaries/exit`.)
+
+MCP end-to-end:
+- MCP clients (Cursor/Claude/ChatGPT MCP) auto-read `mcp.json` and connect to the hosted Notion MCP server.
+- STDIO-only clients: `npm run mcp-remote:local` to expose the local automation server as an MCP endpoint, or `npx -y mcp-remote https://mcp.notion.com/mcp` for hosted.
+- VS Code: `.vscode/settings.json` points MCP-capable extensions to `./mcp.json`; authenticate when prompted.
+
+Figma/Make flow (optional):
+- Open `automations/make/figma-status-to-notion.json` in Make, set tokens, and map `data_source_id` values from `.echohr-install-state.json`.
+- When a Figma frame hits “Ready for Review,” Make creates/updates a Notion Task, attaches to a Check-in, and posts to Slack with a thumbnail.
+
 ## MCP client setup
 
 Notion hosts an MCP server. Point your MCP-capable client at it:
