@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { loadDotEnv } from "./lib/env.mjs";
 import { NotionClient, pageTitleProperty, selectProperty, dateProperty } from "./lib/notion.mjs";
+import { todayISO, pickTitle, getRelationIds } from "./lib/feedback.mjs";
 
 loadDotEnv();
 
@@ -14,6 +15,7 @@ const SLACK_DEFAULT_CHANNEL = process.env.SLACK_DEFAULT_CHANNEL || "";
 const NOTION_TOKEN = process.env.NOTION_TOKEN || "";
 const NOTION_VERSION = process.env.NOTION_VERSION || "2025-09-03";
 const FIGMA_TOKEN = process.env.FIGMA_TOKEN || "";
+const EMAIL_WEBHOOK = process.env.EMAIL_WEBHOOK || ""; // optional: for Make/Zapier email sends
 
 let cachedInstallState = null;
 let cachedNotionClient = null;
@@ -42,12 +44,6 @@ async function loadInstallState() {
 
 function isoToday() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function pickTitle(page) {
-  const titleKey = Object.keys(page.properties || {}).find((k) => page.properties[k].type === "title");
-  if (!titleKey) return "Untitled";
-  return (page.properties[titleKey].title || []).map((t) => t.plain_text || "").join("");
 }
 
 async function createApplicationFromCandidate(candidatePageId) {
@@ -225,22 +221,10 @@ async function createTaskFromFigmaComment({ fileKey, message, nodeId, fileUrl })
   if (!tasksDs) return { ok: false, skipped: true, reason: "Missing Tasks data source ID" };
 
   const notionClient = notion();
-  const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const due = todayISO();
   const task = await notionClient.createRow({
     dataSourceId: tasksDs,
-    properties: {
-      Task: pageTitleProperty(`Review: ${nodeId || fileKey}`),
-      "Task Type": selectProperty("Review"),
-      "Due Date": dateProperty(due),
-      Status: selectProperty("Not Started"),
-      Priority: selectProperty("High"),
-      "Empathy Note": {
-        rich_text: [
-          { type: "text", text: { content: "From Figma comment tagged Ready for Review." } },
-          { type: "text", text: { content: ` ${fileUrl}` } }
-        ]
-      }
-    }
+    properties: buildReviewTaskProps({ title: `Review: ${nodeId || fileKey}`, dueDate: due, fileUrl })
   });
 
   if (SLACK_BOT_TOKEN) {
@@ -274,6 +258,121 @@ async function handleFigmaWebhook(body) {
     results.push(await createTaskFromFigmaComment({ fileKey, message, nodeId, fileUrl }));
   }
   return results;
+}
+
+async function handleMeetingNotesWebhook(body) {
+  const kind = body?.kind || "interview";
+  const notes = body?.notes || "";
+  if (!notes) return { ok: false, skipped: true, reason: "No notes provided" };
+
+  const client = notion();
+  if (kind === "interview") {
+    const interviewId = body.interviewId;
+    if (!interviewId) return { ok: false, skipped: true, reason: "Missing interviewId" };
+    const summary = await generateOpenAISummary("interview", { notes });
+    await client.request(`/v1/pages/${interviewId}`, {
+      method: "PATCH",
+      body: {
+        properties: {
+          "AI Summary": { rich_text: [{ type: "text", text: { content: JSON.stringify(summary) } }] },
+          "Candidate-safe Summary": { rich_text: [{ type: "text", text: { content: summary?.candidate_safe_feedback || "" } }] },
+          "Feedback Submitted At": dateProperty(todayISO())
+        }
+      }
+    });
+    // Update related candidate/app if available
+    const interview = await client.request(`/v1/pages/${interviewId}`);
+    const applicationIds = getRelationIds(interview, "Application");
+    if (applicationIds.length) {
+      const app = await client.request(`/v1/pages/${applicationIds[0]}`);
+      const candidateIds = getRelationIds(app, "Candidate");
+      if (candidateIds.length) {
+        await client.request(`/v1/pages/${candidateIds[0]}`, {
+          method: "PATCH",
+          body: {
+            properties: {
+              "Last Update Sent": dateProperty(todayISO()),
+              "Personalized Next Step": { rich_text: [{ type: "text", text: { content: "Thanks for the interview—here’s your feedback and next step." } }] }
+            }
+          }
+        });
+      }
+    }
+    if (SLACK_BOT_TOKEN) {
+      await sendSlackMessage({
+        text: `Interview feedback posted for ${pickTitle(interview)}. Candidate-safe summary drafted.`,
+        channel: SLACK_DEFAULT_CHANNEL
+      });
+    }
+    return { ok: true, type: "interview", summary };
+  }
+
+  if (kind === "review") {
+    const reviewId = body.reviewId;
+    if (!reviewId) return { ok: false, skipped: true, reason: "Missing reviewId" };
+    const summary = await generateOpenAISummary("review", { notes });
+    await client.request(`/v1/pages/${reviewId}`, {
+      method: "PATCH",
+      body: {
+        properties: {
+          "AI Summary": { rich_text: [{ type: "text", text: { content: summary?.summary || "" } }] },
+          "Action Recommendations": { rich_text: [{ type: "text", text: { content: (summary?.manager_actions || []).join(" ") || "" } }] },
+          "Shared With Employee At": dateProperty(todayISO())
+        }
+      }
+    });
+    if (SLACK_BOT_TOKEN) {
+      await sendSlackMessage({
+        text: `Review summary posted for ${reviewId}. Action recommendations drafted.`,
+        channel: SLACK_DEFAULT_CHANNEL
+      });
+    }
+    return { ok: true, type: "review", summary };
+  }
+
+  return { ok: false, skipped: true, reason: "Unknown kind" };
+}
+
+async function feedbackSweep() {
+  const state = await loadInstallState();
+  if (!state) return { ok: false, skipped: true, reason: "No install state" };
+  const interviewsDs = state.databases?.interviews?.dataSourceId;
+  if (!interviewsDs) return { ok: false, skipped: true, reason: "Missing Interviews data source" };
+
+  const client = notion();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const res = await client.queryDatabase(interviewsDs, {
+    filter: {
+      and: [
+        { property: "Status", select: { equals: "Completed" } },
+        { property: "Feedback Submitted At", date: { is_empty: true } },
+        { property: "Scheduled For", date: { before: sevenDaysAgo } }
+      ]
+    }
+  });
+
+  const reminders = [];
+  for (const page of res.results || []) {
+    const title = pickTitle(page);
+    reminders.push(title);
+  }
+
+  if (SLACK_BOT_TOKEN && reminders.length) {
+    await sendSlackMessage({
+      text: `Feedback overdue (>7d) for interviews: ${reminders.join(", ")}`,
+      channel: SLACK_DEFAULT_CHANNEL
+    });
+  }
+
+  if (EMAIL_WEBHOOK && reminders.length) {
+    await fetch(EMAIL_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject: "EchoHR feedback reminder", interviews: reminders })
+    }).catch(() => null);
+  }
+
+  return { ok: true, overdue: reminders.length };
 }
 
 function json(response, status, body) {
@@ -441,6 +540,17 @@ const server = createServer(async (request, response) => {
       const body = await readBody(request);
       const results = await handleFigmaWebhook(body);
       return json(response, 200, { ok: true, processed: results });
+    }
+
+    if (request.method === "POST" && url.pathname === "/webhooks/meeting-notes") {
+      const body = await readBody(request);
+      const result = await handleMeetingNotesWebhook(body);
+      return json(response, 200, { ok: true, processed: [result] });
+    }
+
+    if (request.method === "POST" && url.pathname === "/ops/feedback-sweep") {
+      const result = await feedbackSweep();
+      return json(response, 200, result);
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/slack") {

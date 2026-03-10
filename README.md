@@ -106,8 +106,10 @@ Webhook + automation endpoints (MCP-friendly):
   - New Candidate → auto-create Application + SLA Task for the stage owner
   - Offer set to Accepted → auto-create Onboarding Journey + first 3 monthly Check-ins
 - `POST /webhooks/figma` — Figma “Ready for Review” comment → creates a Notion Review task (type Review) due tomorrow and posts Slack if configured
+- `POST /webhooks/meeting-notes` — body `{kind: "interview"|"review", interviewId/reviewId, notes}` → AI summary back into Notion (candidate-safe + manager actions) + Slack notify
 - `POST /slack/notify` — simple Slack DM/channel helper
 - `POST /summaries/interview|review|exit` — OpenAI summaries ready to write back to Notion
+- `POST /ops/feedback-sweep` — finds interviews completed >7 days with no feedback and pings Slack (and optional EMAIL_WEBHOOK)
 - `GET /health` — status
 
 Make/Zapier/Figma glue:

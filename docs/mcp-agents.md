@@ -8,6 +8,11 @@ Use these prompts in your MCP-capable client (Notion + Slack + Calendar + Figma 
 MCP servers: Figma, Notion, Calendar, Slack.
 Note: You can also send Figma comment payloads to `POST /webhooks/figma` (automation server) to auto-create the Review task + Slack notify.
 
+## Meeting notes → Candidate-safe feedback
+“Take these interview/appraisal notes, write candidate-safe feedback, post it to the linked Interview/Review in Notion, and DM the owner. If no feedback in 7 days, ping Slack and draft a candidate update.”
+
+MCP servers: Notion, Slack (optional Calendar if you add follow-up meetings). You can also hit `POST /webhooks/meeting-notes` with `{kind:'interview'|'review', interviewId|reviewId, notes}`.
+
 ## Candidate no-ghosting sweep
 “In EchoHR Candidates, find active candidates whose Last Update Sent is >2 days ago. Draft candidate-safe updates, set Personalized Next Step, and notify Stage Owner in Slack. If missing Application, create one.”
 
