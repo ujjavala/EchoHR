@@ -1,5 +1,7 @@
 import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
 import { loadDotEnv } from "./lib/env.mjs";
+import { NotionClient, pageTitleProperty, selectProperty, dateProperty } from "./lib/notion.mjs";
 
 loadDotEnv();
 
@@ -9,6 +11,196 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || "";
 const SLACK_DEFAULT_CHANNEL = process.env.SLACK_DEFAULT_CHANNEL || "";
+const NOTION_TOKEN = process.env.NOTION_TOKEN || "";
+const NOTION_VERSION = process.env.NOTION_VERSION || "2025-09-03";
+
+let cachedInstallState = null;
+let cachedNotionClient = null;
+
+function notion() {
+  if (!NOTION_TOKEN) {
+    throw new Error("NOTION_TOKEN is required for webhook processing.");
+  }
+  if (!cachedNotionClient) {
+    cachedNotionClient = new NotionClient({ token: NOTION_TOKEN, version: NOTION_VERSION });
+  }
+  return cachedNotionClient;
+}
+
+async function loadInstallState() {
+  if (cachedInstallState) return cachedInstallState;
+  try {
+    const raw = await readFile(".echohr-install-state.json", "utf8");
+    cachedInstallState = JSON.parse(raw);
+    return cachedInstallState;
+  } catch (error) {
+    console.warn("Install state not found; webhook automation will no-op. Error:", error.message);
+    return null;
+  }
+}
+
+function isoToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function pickTitle(page) {
+  const titleKey = Object.keys(page.properties || {}).find((k) => page.properties[k].type === "title");
+  if (!titleKey) return "Untitled";
+  return (page.properties[titleKey].title || []).map((t) => t.plain_text || "").join("");
+}
+
+async function createApplicationFromCandidate(candidatePageId) {
+  const state = await loadInstallState();
+  if (!state) return { ok: false, skipped: true, reason: "No install state" };
+
+  const candidateDs = state.databases?.candidates?.dataSourceId;
+  const applicationsDs = state.databases?.applications?.dataSourceId;
+  if (!candidateDs || !applicationsDs) return { ok: false, skipped: true, reason: "Missing data source IDs" };
+
+  const client = notion();
+  const candidate = await client.request(`/v1/pages/${candidatePageId}`);
+  const title = pickTitle(candidate);
+  const relationProps = candidate.properties || {};
+  const primaryRoleRel = relationProps["Primary Role"]?.relation || [];
+  const stageOwnerRel = relationProps["Stage Owner"]?.relation || [];
+
+  const appId = `APP-${Date.now().toString().slice(-6)}`;
+
+  await client.createRow({
+    dataSourceId: applicationsDs,
+    properties: {
+      "Application ID": pageTitleProperty(appId),
+      Candidate: { relation: [{ id: candidatePageId }] },
+      Role: primaryRoleRel.length ? { relation: primaryRoleRel } : undefined,
+      "Application Status": selectProperty("Active"),
+      "Pipeline Stage": selectProperty("Applied"),
+      "Applied Date": dateProperty(isoToday())
+    }
+  });
+
+  // SLA reminder task for stage owner
+  const tasksDs = state.databases?.tasks?.dataSourceId;
+  if (tasksDs) {
+    const dueInTwoDays = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await client.createRow({
+      dataSourceId: tasksDs,
+      properties: {
+        Task: pageTitleProperty(`Send update to ${title}`),
+        "Task Type": selectProperty("Hiring"),
+        "Due Date": dateProperty(dueInTwoDays),
+        Status: selectProperty("Not Started"),
+        Priority: selectProperty("High"),
+        "Auto-created": { checkbox: true },
+        "Empathy Note": {
+          rich_text: [
+            {
+              type: "text",
+              text: { content: "No ghosting: send a clear next-step update within 2 business days." }
+            }
+          ]
+        },
+        ...(stageOwnerRel.length ? { Owner: { relation: stageOwnerRel } } : {})
+      }
+    });
+  }
+
+  return { ok: true, createdApplicationId: appId, candidateTitle: title };
+}
+
+async function createOnboardingFromAcceptedOffer(offerPageId) {
+  const state = await loadInstallState();
+  if (!state) return { ok: false, skipped: true, reason: "No install state" };
+  const offersDs = state.databases?.offers?.dataSourceId;
+  const journeysDs = state.databases?.onboardingJourneys?.dataSourceId;
+  const checkinsDs = state.databases?.checkins?.dataSourceId;
+  if (!offersDs || !journeysDs || !checkinsDs) return { ok: false, skipped: true, reason: "Missing data source IDs" };
+
+  const client = notion();
+  const offer = await client.request(`/v1/pages/${offerPageId}`);
+  const candidateRel = offer.properties?.Candidate?.relation || [];
+  const startDate = offer.properties?.["Start Date Proposed"]?.date?.start || isoToday();
+  const title = pickTitle(offer);
+
+  if (!candidateRel.length) return { ok: false, skipped: true, reason: "Offer missing Candidate relation" };
+
+  // Onboarding journey
+  const journeyTitle = `${title} - Onboarding`;
+  const journey = await client.createRow({
+    dataSourceId: journeysDs,
+    properties: {
+      "Journey Name": pageTitleProperty(journeyTitle),
+      Employee: { relation: candidateRel },
+      "Start Date": dateProperty(startDate),
+      "Journey Status": selectProperty("Preboarding"),
+      "Intro Message": {
+        rich_text: [
+          { type: "text", text: { content: "Welcome aboard! Your buddy and check-ins are set up." } }
+        ]
+      }
+    }
+  });
+
+  // First 3 monthly check-ins
+  const managerRel = offer.properties?.["Approval Owner"]?.relation || [];
+  for (let month = 1; month <= 3; month += 1) {
+    const due = new Date(startDate);
+    due.setMonth(due.getMonth() + month - 1);
+    const checkinDate = due.toISOString().slice(0, 10);
+    await client.createRow({
+      dataSourceId: checkinsDs,
+      properties: {
+        "Check-in Name": pageTitleProperty(`${title} - Month ${month}`),
+        Employee: { relation: candidateRel },
+        ...(managerRel.length ? { Manager: { relation: managerRel } } : {}),
+        "Check-in Type": selectProperty("Monthly"),
+        "Scheduled Date": dateProperty(checkinDate),
+        Status: selectProperty("Planned")
+      }
+    });
+  }
+
+  return { ok: true, onboardingJourneyId: journey.id };
+}
+
+async function processNotionWebhook(body) {
+  const events = body?.events || (body?.event ? [body.event] : [body]).filter(Boolean);
+  const results = [];
+  for (const event of events) {
+    const dsId =
+      event?.data?.parent?.data_source_id ||
+      event?.data_source_id ||
+      event?.parent?.data_source_id;
+    const pageId = event?.data?.id || event?.id;
+    if (!dsId || !pageId) {
+      results.push({ ok: false, skipped: true, reason: "Missing data_source_id or page id" });
+      continue;
+    }
+    const state = await loadInstallState();
+    if (!state) {
+      results.push({ ok: false, skipped: true, reason: "No install state" });
+      continue;
+    }
+
+    // Candidate created -> Application + SLA task
+    if (dsId === state.databases?.candidates?.dataSourceId && event?.type === "page_created") {
+      results.push(await createApplicationFromCandidate(pageId));
+      continue;
+    }
+
+    // Offer status Accepted -> Onboarding journey + check-ins
+    if (dsId === state.databases?.offers?.dataSourceId) {
+      const offer = await notion().request(`/v1/pages/${pageId}`);
+      const status = offer.properties?.["Offer Status"]?.select?.name || "";
+      if (status === "Accepted") {
+        results.push(await createOnboardingFromAcceptedOffer(pageId));
+        continue;
+      }
+    }
+
+    results.push({ ok: true, skipped: true, reason: "No matching automation" });
+  }
+  return results;
+}
 
 function json(response, status, body) {
   response.writeHead(status, { "Content-Type": "application/json" });
@@ -166,12 +358,9 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/notion") {
-      return json(response, 200, {
-        ok: true,
-        route: "notion",
-        received: await readBody(request),
-        hint: "Connect this endpoint from Make or Zapier to enrich and route Notion events."
-      });
+      const body = await readBody(request);
+      const results = await processNotionWebhook(body);
+      return json(response, 200, { ok: true, processed: results });
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/slack") {

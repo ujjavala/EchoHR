@@ -1,0 +1,24 @@
+{
+  "name": "Figma status → Notion task/check-in",
+  "description": "When a Figma file or frame is marked Ready for Review, create/attach a Notion Task and optional Check-in with the correct reviewer/owner. Posts a Slack note with the Figma link and thumbnail.",
+  "steps": [
+    "Trigger: Figma webhook for file_version/update or comment added with tag Ready for Review.",
+    "Get file metadata + frame thumbnail (Figma API get file nodes).",
+    "Router: map Team/Project to Notion Role/Goal/Task Type.",
+    "Create or update Notion Task in the Tasks data source (data_source_id from echohr-install-state.json).",
+    "If a Check-in exists for the employee/goal this week, attach the Task; otherwise create a new Check-in entry dated this week.",
+    "Post Slack message with: title, status, owner, Notion links, Figma link, and thumbnail.",
+    "Log run in Automation Log with Workflow=Review Summary."
+  ],
+  "env_required": [
+    "NOTION_TOKEN",
+    "NOTION_VERSION",
+    "SLACK_BOT_TOKEN",
+    "FIGMA_TOKEN"
+  ],
+  "notion_mappings": {
+    "tasks_data_source_id": "Set from .echohr-install-state.json -> databases.tasks.dataSourceId",
+    "checkins_data_source_id": "Set from .echohr-install-state.json -> databases.checkins.dataSourceId",
+    "automation_log_data_source_id": "Set from .echohr-install-state.json -> databases.automationLog.dataSourceId"
+  }
+}

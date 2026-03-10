@@ -88,11 +88,57 @@ Run the local automation server:
 npm run automation-server
 ```
 
+Expose the local automation server as an MCP endpoint (for STDIO-only MCP clients):
+
+```bash
+npm run mcp-remote:local
+```
+
 Recreate everything from scratch (new versioned root, refreshed schemas, rollups, demo data):
 
 ```bash
 npm run demo -- --force-new
 ```
+
+Webhook + automation endpoints (MCP-friendly):
+
+- `POST /webhooks/notion` — reacts to Notion events:
+  - New Candidate → auto-create Application + SLA Task for the stage owner
+  - Offer set to Accepted → auto-create Onboarding Journey + first 3 monthly Check-ins
+- `POST /slack/notify` — simple Slack DM/channel helper
+- `POST /summaries/interview|review|exit` — OpenAI summaries ready to write back to Notion
+- `GET /health` — status
+
+Make/Zapier/Figma glue:
+
+- Example scenario: `automations/make/figma-status-to-notion.json` — when a Figma frame hits “Ready for Review”, create/update a Notion Task, attach to the right Check-in, and post to Slack with a thumbnail.
+
+## MCP client setup
+
+Notion hosts an MCP server. Point your MCP-capable client at it:
+
+```json
+{
+  "mcpServers": {
+    "Notion": { "type": "http", "url": "https://mcp.notion.com/mcp" },
+    "NotionSseFallback": { "type": "sse", "url": "https://mcp.notion.com/sse" }
+  }
+}
+```
+
+- Example configs: `mcp/mcp-client-config.example.json` and root-level `mcp.json` (most MCP clients auto-read it).
+- Authenticate with your Notion account when prompted by the client (Cursor, Claude Desktop, ChatGPT MCP, etc.).
+- For STDIO-only clients, wrap the hosted server with `mcp-remote`: `npx -y mcp-remote https://mcp.notion.com/mcp`.
+
+Multi-agent MCP (optional):
+
+- Use `mcp/multi-agent-config.example.json` as a template to add additional MCP servers alongside Notion.
+- Example entry included to wrap the local automation server via `mcp-remote` when you run `npm run automation-server`.
+- Add your own MCP servers (e.g., internal tools, vector search, monitoring) to orchestrate cross-system workflows in one MCP-aware client.
+
+VS Code MCP convenience:
+
+- `.vscode/settings.json` points MCP-capable VS Code extensions to `./mcp.json`.
 
 ## Output
 

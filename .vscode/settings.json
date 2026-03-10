@@ -1,0 +1,4 @@
+{
+  "mcp.configPath": "${workspaceFolder}/mcp.json",
+  "mcp.enabled": true
+}

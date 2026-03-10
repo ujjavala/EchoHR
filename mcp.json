@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "Notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "NotionSseFallback": {
+      "type": "sse",
+      "url": "https://mcp.notion.com/sse"
+    }
+  },
+  "notes": [
+    "Authenticate with your Notion account when prompted by your MCP-capable client.",
+    "If your client only supports STDIO, wrap this server with: npx -y mcp-remote https://mcp.notion.com/mcp"
+  ]
+}

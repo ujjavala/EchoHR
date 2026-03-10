@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "Notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "NotionSseFallback": {
+      "type": "sse",
+      "url": "https://mcp.notion.com/sse"
+    }
+  },
+  "notes": [
+    "Use HTTP (/mcp) as primary transport; SSE (/sse) is a fallback for clients that need it.",
+    "Authenticate via OAuth when your MCP-capable client prompts (Cursor, Claude Desktop, ChatGPT MCP, etc.).",
+    "For strict STDIO-only clients, wrap the hosted server with mcp-remote: { \"command\": \"npx\", \"args\": [\"-y\", \"mcp-remote\", \"https://mcp.notion.com/mcp\"] }"
+  ]
+}

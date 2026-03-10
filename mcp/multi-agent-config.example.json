@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "Notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "NotionSseFallback": {
+      "type": "sse",
+      "url": "https://mcp.notion.com/sse"
+    },
+    "LocalEchoHRAutomation": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:8787"]
+    }
+  },
+  "notes": [
+    "Add more MCP servers here (e.g., internal tools) to orchestrate multi-agent workflows.",
+    "LocalEchoHRAutomation wraps the automation server with mcp-remote; start it with `npm run automation-server`."
+  ]
+}
