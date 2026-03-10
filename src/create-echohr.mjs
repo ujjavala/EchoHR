@@ -88,6 +88,203 @@ function topLevelIntroBlocks() {
   ];
 }
 
+function viewGuideBlocks() {
+  return [
+    heading(2, "How to make EchoHR look like a product (5–10 min)"),
+    paragraph("Notion’s API can’t create views. Apply these after provisioning for the best UX:"),
+    heading(3, "Hiring"),
+    bulleted("Candidates: Board grouped by Stage; show Stage Owner, Last Update Sent, Personalized Next Step, Sentiment; filter Last Update Sent before 2 days ago for “Needs update”."),
+    bulleted("Offers: Calendar by Response Due; Board by Offer Status; show Base Salary, Start Date Proposed, Approval Owner."),
+    bulleted("Interviews: Calendar by Scheduled For."),
+    heading(3, "Onboarding"),
+    bulleted("Onboarding Journeys: Timeline by Start Date; Board by Journey Status; show Health Status, New Hire Portal."),
+    bulleted("Tasks (Onboarding): Board by Status; badge Priority."),
+    bulleted("Check-ins: Calendar by Scheduled Date; Board by Status; badge Mood Score."),
+    heading(3, "Growth"),
+    bulleted("Goals: Board by Status; Table by Due Date; show Progress %, Manager Notes."),
+    bulleted("Performance Reviews: Board by Review Status; Gallery showing Rating & Promotion Recommendation; Timeline by Review Due Date."),
+    bulleted("Achievements: Gallery grouped by Impact; card preview = page cover."),
+    heading(3, "Culture"),
+    bulleted("Recognition: Gallery grouped by Category; show From, To, Message, Date."),
+    bulleted("Pulse: Board by Survey Type; Table sorted by Submitted At; add formula badge for Mood = avg(Energy, Clarity, Support)."),
+    heading(3, "Offboarding"),
+    bulleted("Offboarding Cases: Board by Status; show Reason Category, Last Working Day, Knowledge Transfer."),
+    heading(3, "Dashboards"),
+    bulleted("Hiring Command Center: Candidates board, Offers calendar, Interviews calendar + KPI callouts."),
+    bulleted("Onboarding: Journeys timeline, Tasks board (Onboarding), Check-ins calendar."),
+    bulleted("Growth: Goals board, Reviews board, Achievements gallery."),
+    bulleted("Culture: Recognition gallery, Pulse board, Mood-of-day linked view."),
+    bulleted("Offboarding: Offboarding board, Knowledge Transfer table."),
+    heading(3, "Charts"),
+    bulleted("If Notion Charts are available, add bar/line charts on the dashboards; otherwise embed Sheets/Datawrapper charts via an Embed block."),
+    callout("Tip: add a cover + emoji to each hub page; keep 4–6 status colors total for clean badges.", "🎨")
+  ];
+}
+
+function textLink(text, url) {
+  return {
+    type: "text",
+    text: { content: text, link: { url } }
+  };
+}
+
+function calloutLink(text, url, emoji = "➡️") {
+  return {
+    object: "block",
+    type: "callout",
+    callout: {
+      rich_text: [
+        {
+          type: "text",
+          text: { content: text, link: { url } }
+        }
+      ],
+      icon: { type: "emoji", emoji }
+    }
+  };
+}
+
+function linkText(text, url) {
+  return {
+    type: "text",
+    text: { content: text, link: { url } }
+  };
+}
+
+function landingBlocks(root, sectionPages) {
+  const hiringUrl = sectionPages.hiring.url;
+  const onboardingUrl = sectionPages.onboarding.url;
+  const growthUrl = sectionPages.growth.url;
+  const cultureUrl = sectionPages.culture.url;
+  const offboardingUrl = sectionPages.offboarding.url;
+  const automationUrl = sectionPages.automation.url;
+
+  const navLine = {
+    object: "block",
+    type: "paragraph",
+    paragraph: {
+      rich_text: [
+        textLink("Hiring", hiringUrl),
+        { type: "text", text: { content: "   ·   " } },
+        textLink("Onboarding", onboardingUrl),
+        { type: "text", text: { content: "   ·   " } },
+        textLink("Growth", growthUrl),
+        { type: "text", text: { content: "   ·   " } },
+        textLink("Culture", cultureUrl),
+        { type: "text", text: { content: "   ·   " } },
+        textLink("Offboarding", offboardingUrl),
+        { type: "text", text: { content: "   ·   " } },
+        textLink("Automation", automationUrl)
+      ]
+    }
+  };
+
+  const hero = callout("No ghosting. Clear next steps for everyone.", "✨");
+
+  const ctaRow = {
+    object: "block",
+    type: "column_list",
+    column_list: {
+      children: [
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [calloutLink("Go to Hiring Command Center", hiringUrl, "🎯")]
+          }
+        },
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [calloutLink("Start Today’s Ops Sweep", automationUrl, "⚡")]
+          }
+        }
+      ]
+    }
+  };
+
+  const metricsRow = {
+    object: "block",
+    type: "column_list",
+    column_list: {
+      children: [
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [
+              callout("Open roles → add a view: Roles board grouped by Hiring Status", "🧩")
+            ]
+          }
+        },
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [
+              callout("Active candidates → Candidates board grouped by Stage", "💼")
+            ]
+          }
+        },
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [
+              callout("Updates due → filter Candidates where Last Update Sent < 2 days ago", "⏰")
+            ]
+          }
+        }
+      ]
+    }
+  };
+
+  const featureGrid = {
+    object: "block",
+    type: "column_list",
+    column_list: {
+      children: [
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [
+              calloutLink("No-Ghosting Guardrail", hiringUrl, "💬"),
+              calloutLink("Onboarding Clarity", onboardingUrl, "🚀")
+            ]
+          }
+        },
+        {
+          object: "block",
+          type: "column",
+          column: {
+            children: [
+              calloutLink("Growth & Reviews", growthUrl, "📈"),
+              calloutLink("Culture Signals", cultureUrl, "🎉")
+            ]
+          }
+        }
+      ]
+    }
+  };
+
+  const todayPanel = {
+    object: "block",
+    type: "callout",
+    callout: {
+      icon: { type: "emoji", emoji: "📅" },
+      rich_text: [
+        { type: "text", text: { content: "Today: Add linked views → Tasks (Due today/tomorrow, sort by Priority) and Check-ins (Scheduled today)." } }
+      ]
+    }
+  };
+
+  const charts = callout("Add charts: embed Sheets/Datawrapper for candidates by stage, offer acceptance, pulse score trend. If Notion Charts are enabled, add chart blocks on dashboard views.", "📊");
+
+  return [hero, navLine, ctaRow, metricsRow, featureGrid, todayPanel, charts];
+}
+
 function sectionBlocks(section) {
   return [
     heading(2, section.title),
@@ -224,6 +421,52 @@ async function createPageHierarchy(notion, parentPageId, version) {
   }
 
   return { root, sectionPages };
+}
+
+async function createViewGuidePage(notion, rootPageId) {
+  return notion.createPage({
+    parent: { type: "page_id", page_id: rootPageId },
+    title: "Setup Views (5–10 min)",
+    children: viewGuideBlocks()
+  });
+}
+
+function checklistParagraph(label, url, instruction) {
+  return {
+    object: "block",
+    type: "paragraph",
+    paragraph: {
+      rich_text: [
+        linkText(label, url),
+        { type: "text", text: { content: ` — ${instruction}` } }
+      ]
+    }
+  };
+}
+
+function checklistBlocks(registry) {
+  return [
+    heading(2, "Quick view setup (click, add view, done)"),
+    callout("Notion blocks views from API. Use these direct links and follow the short instruction per database.", "🖱️"),
+    heading(3, "Hiring"),
+    checklistParagraph("Candidates", registry.candidates.url, "Add Board grouped by Stage; show Stage Owner, Last Update Sent, Personalized Next Step, Sentiment; filter Last Update Sent < 2 days ago (save as “Needs update”)."),
+    checklistParagraph("Offers", registry.offers.url, "Add Calendar by Response Due; Board by Offer Status; show Base Salary, Start Date Proposed, Approval Owner."),
+    checklistParagraph("Interviews", registry.interviews.url, "Add Calendar by Scheduled For."),
+    heading(3, "Onboarding"),
+    checklistParagraph("Onboarding Journeys", registry.onboardingJourneys.url, "Add Timeline by Start Date; Board by Journey Status; show Health Status, New Hire Portal."),
+    checklistParagraph("Tasks (Onboarding)", registry.tasks.url, "Add Board grouped by Status; filter Task Type = Onboarding; badge Priority."),
+    checklistParagraph("Check-ins", registry.checkins.url, "Add Calendar by Scheduled Date; Board by Status; badge Mood Score."),
+    heading(3, "Growth"),
+    checklistParagraph("Goals", registry.goals.url, "Add Board grouped by Status; Table sorted by Due Date; show Progress %, Manager Notes."),
+    checklistParagraph("Performance Reviews", registry.performanceReviews.url, "Add Board grouped by Review Status; Gallery showing Rating, Promotion Recommendation; Timeline by Review Due Date."),
+    checklistParagraph("Achievements", registry.achievements.url, "Add Gallery grouped by Impact; set card preview = Page cover."),
+    heading(3, "Culture"),
+    checklistParagraph("Recognition", registry.recognition.url, "Add Gallery grouped by Category; show From, To, Message, Date."),
+    checklistParagraph("Pulse Surveys", registry.pulseSurveys.url, "Add Board grouped by Survey Type; Table sorted by Submitted At; add formula badge Mood = avg(Energy, Clarity, Support)."),
+    heading(3, "Offboarding"),
+    checklistParagraph("Offboarding Cases", registry.offboardingCases.url, "Add Board grouped by Status; show Reason Category, Last Working Day, Knowledge Transfer."),
+    checklistParagraph("Knowledge Transfers", registry.knowledgeTransfers.url, "Add Table sorted by Status; show Open Risks, Successor.")
+  ];
 }
 
 async function createDatabases(notion, sectionPages) {
@@ -1019,6 +1262,18 @@ async function main() {
     await applyRollups(notion, registry);
     await seedTemplates(notion, registry);
     if (createdNewInstall) {
+      const viewGuide = await createViewGuidePage(notion, root.id);
+      await notion.createPage({
+        parent: { type: "page_id", page_id: root.id },
+        title: "View Setup Checklist (click-through)",
+        children: checklistBlocks(registry)
+      });
+      const viewGuideTitle = viewGuide.title || "Setup Views (5–10 min)";
+      for (const page of Object.values(sectionPages)) {
+        await notion.appendBlockChildren(page.id, [
+          callout(`UI tip: open "${viewGuideTitle}" in the root to switch this space from tables to boards/timelines/galleries.`, "🎨")
+        ]);
+      }
       await seedAutomationPlaybooks(notion, sectionPages.automation.id);
     }
 

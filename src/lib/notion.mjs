@@ -88,7 +88,7 @@ export class NotionClient {
     return response.json();
   }
 
-  async createPage({ parent, title, children = [] }) {
+  async createPage({ parent, title, children = [], icon }) {
     if (this.dryRun) {
       this.counter += 1;
       return {
@@ -107,6 +107,7 @@ export class NotionClient {
         properties: {
           title: pageTitleProperty(title)
         },
+        ...(icon ? { icon: { type: "emoji", emoji: icon } } : {}),
         children
       }
     });
