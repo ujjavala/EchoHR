@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  echohr:
+    build: .
+    container_name: echohr
+    environment:
+      NOTION_TOKEN: ${NOTION_TOKEN}
+      NOTION_PARENT_PAGE_ID: ${NOTION_PARENT_PAGE_ID}
+      NOTION_VERSION: ${NOTION_VERSION:-2025-09-03}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_DEFAULT_CHANNEL: ${SLACK_DEFAULT_CHANNEL}
+      LOGO_URL: ${LOGO_URL}
+      HERO_VIDEO_URL: ${HERO_VIDEO_URL}
+      FEATURE_FLAGS_PATH: ${FEATURE_FLAGS_PATH:-config/feature-flags.json}
+      STATUS_WATCH_WINDOW_MIN: ${STATUS_WATCH_WINDOW_MIN:-15}
+    ports:
+      - "8787:8787"
+    volumes:
+      - .echohr-install-state.json:/app/.echohr-install-state.json
+      - ./config:/app/config
+    command: >
+      sh -c "npm run demo -- --seed-demo --force-new &&
+             npm run automation-server"

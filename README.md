@@ -97,6 +97,19 @@ STATUS_WATCH_WINDOW_MIN=15 npm run mcp-status-watch
 ```
 Reads `.echohr-install-state.json`, queries recent edits, and posts Slack status updates without Notion webhooks.
 
+## Docker (one-shot demo + automation server)
+
+```bash
+docker compose up --build
+```
+
+What it does:
+- Installs deps
+- Runs `npm run demo -- --seed-demo --force-new` to provision Notion
+- Starts `npm run automation-server` on port 8787
+
+Set env vars (NOTION_TOKEN, NOTION_PARENT_PAGE_ID, SLACK_BOT_TOKEN, etc.) in your shell or a `.env` file for docker compose.
+
 Expose the local automation server as an MCP endpoint (for STDIO-only MCP clients):
 
 ```bash
