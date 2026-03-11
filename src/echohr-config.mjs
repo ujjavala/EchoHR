@@ -424,6 +424,24 @@ export const databases = [
     }
   },
   {
+    key: "moodLogs",
+    title: "Mood Logs",
+    section: "culture",
+    icon: "😊",
+    description: "Daily mood/energy/clarity pulses for team health and celebrations.",
+    properties: {
+      "Mood Entry": title(),
+      "Employee": people(),
+      "Date": date(),
+      "Mood": select(["Great", "Good", "Meh", "Low"]),
+      "Energy": number(),
+      "Clarity": number(),
+      "Support": number(),
+      "Note": text(),
+      "Share to Slack": checkbox()
+    }
+  },
+  {
     key: "knowledgeTransfers",
     title: "Knowledge Transfers",
     section: "offboarding",
@@ -543,6 +561,7 @@ export const relationPatches = [
   { db: "recognition", property: "From", target: "people", synced: "Recognition Given" },
   { db: "recognition", property: "To", target: "people", synced: "Recognition Received" },
   { db: "pulseSurveys", property: "Employee", target: "people", synced: "Pulse Responses" },
+  { db: "moodLogs", property: "Employee", target: "people", synced: "Mood Logs" },
   { db: "knowledgeTransfers", property: "Employee", target: "people", synced: "Knowledge Transfers" },
   { db: "knowledgeTransfers", property: "Successor", target: "people", synced: "Knowledge Successor" },
   { db: "offboardingCases", property: "Employee", target: "people", synced: "Offboarding Cases" },
@@ -564,6 +583,7 @@ export const rollupPatches = [
   { db: "people", property: "Linked Check-ins", relation: "Check-ins", target: "checkins", rollup: "Check-in Name", fn: "count_values" },
   { db: "people", property: "Goal Count", relation: "Goals", target: "goals", rollup: "Goal Title", fn: "count_values" },
   { db: "people", property: "Achievement Count", relation: "Achievements", target: "achievements", rollup: "Achievement Title", fn: "count_values" },
+  { db: "people", property: "Mood Count", relation: "Mood Logs", target: "moodLogs", rollup: "Mood Entry", fn: "count_values" },
   { db: "performanceReviews", property: "Linked Goal Progress %", relation: "Goals", target: "goals", rollup: "Progress %", fn: "average" },
   { db: "performanceReviews", property: "Achievements Count", relation: "Achievements", target: "achievements", rollup: "Achievement Title", fn: "count_values" },
   { db: "compensationEvents", property: "Achievements Count", relation: "Achievements", target: "achievements", rollup: "Achievement Title", fn: "count_values" },

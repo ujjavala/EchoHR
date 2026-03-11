@@ -120,6 +120,7 @@ Make/Zapier/Figma glue:
 
 UI & dashboards:
 - Notion API can’t create views; use the recipes in `docs/views-and-dashboards.md` to add boards, timelines, galleries, and embeds so the workspace feels like a product, not a spreadsheet. (Includes which properties, grouping, filters, and suggested charts.)
+- For faster polish, see `docs/user-experience.md` for covers, color themes, portal layouts (candidate/new-hire/employee), mood-of-day and celebrations, and dashboard block recipes.
 - Every fresh install creates a “Setup Views (5–10 min)” page under the root with the key view instructions; each section page links to it via a callout.
 
 ## How to test the app (end-to-end)

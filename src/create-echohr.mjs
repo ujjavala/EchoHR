@@ -114,6 +114,7 @@ function viewGuideBlocks() {
     bulleted("Onboarding: Journeys timeline, Tasks board (Onboarding), Check-ins calendar."),
     bulleted("Growth: Goals board, Reviews board, Achievements gallery."),
     bulleted("Culture: Recognition gallery, Pulse board, Mood-of-day linked view."),
+    bulleted("Mood Logs: Board grouped by Mood; Table sorted by Date; filter Date is today for “Mood of Day”."),
     bulleted("Offboarding: Offboarding board, Knowledge Transfer table."),
     heading(3, "Charts"),
     bulleted("If Notion Charts are available, add bar/line charts on the dashboards; otherwise embed Sheets/Datawrapper charts via an Embed block."),
@@ -420,7 +421,40 @@ async function createPageHierarchy(notion, parentPageId, version) {
     sectionPages[section.key] = page;
   }
 
+  await stylePages(notion, root, sectionPages);
   return { root, sectionPages };
+}
+
+async function stylePages(notion, root, sectionPages) {
+  const covers = {
+    root: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80",
+    hiring: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
+    onboarding: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1600&q=80",
+    growth: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
+    culture: "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1600&q=80",
+    offboarding: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80",
+    automation: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1600&q=80"
+  };
+
+  const iconFor = (key) => sections.find((s) => s.key === key)?.icon || "✨";
+
+  await notion.request(`/v1/pages/${root.id}`, {
+    method: "PATCH",
+    body: {
+      icon: { type: "emoji", emoji: "💠" },
+      cover: { type: "external", external: { url: covers.root } }
+    }
+  });
+
+  for (const [key, page] of Object.entries(sectionPages)) {
+    await notion.request(`/v1/pages/${page.id}`, {
+      method: "PATCH",
+      body: {
+        icon: { type: "emoji", emoji: iconFor(key) },
+        cover: { type: "external", external: { url: covers[key] || covers.root } }
+      }
+    });
+  }
 }
 
 async function createViewGuidePage(notion, rootPageId) {
@@ -463,6 +497,7 @@ function checklistBlocks(registry) {
     heading(3, "Culture"),
     checklistParagraph("Recognition", registry.recognition.url, "Add Gallery grouped by Category; show From, To, Message, Date."),
     checklistParagraph("Pulse Surveys", registry.pulseSurveys.url, "Add Board grouped by Survey Type; Table sorted by Submitted At; add formula badge Mood = avg(Energy, Clarity, Support)."),
+    checklistParagraph("Mood Logs", registry.moodLogs.url, "Add Board grouped by Mood; Table sorted by Date; filter Date is today for a “Mood of Day” view."),
     heading(3, "Offboarding"),
     checklistParagraph("Offboarding Cases", registry.offboardingCases.url, "Add Board grouped by Status; show Reason Category, Last Working Day, Knowledge Transfer."),
     checklistParagraph("Knowledge Transfers", registry.knowledgeTransfers.url, "Add Table sorted by Status; show Open Risks, Successor.")
@@ -907,6 +942,39 @@ async function seedDemoContent(notion, registry) {
       "Support Score": { number: 5 },
       "Free Text": richTextProperty("I know what I am working on and I know who to ask when blocked."),
       "AI Theme Summary": richTextProperty("High clarity and support. Keep reinforcing manager access and learning paths.")
+    });
+
+  await createOrFindSafeRow(notion, registry.moodLogs, `${demoSeed.people.employee.name} - Mood Today`, {
+      "Mood Entry": pageTitleProperty(`${demoSeed.people.employee.name} - Mood Today`),
+      Employee: relationValue([employee.id]),
+      Date: dateProperty("2026-03-10"),
+      Mood: selectProperty("Good"),
+      Energy: { number: 4 },
+      Clarity: { number: 4 },
+      Support: { number: 5 },
+      Note: richTextProperty("Excited about onboarding clean-up; feeling supported.")
+    });
+
+  await createOrFindSafeRow(notion, registry.moodLogs, `${demoSeed.people.manager.name} - Mood Today`, {
+      "Mood Entry": pageTitleProperty(`${demoSeed.people.manager.name} - Mood Today`),
+      Employee: relationValue([manager.id]),
+      Date: dateProperty("2026-03-10"),
+      Mood: selectProperty("Meh"),
+      Energy: { number: 3 },
+      Clarity: { number: 3 },
+      Support: { number: 3 },
+      Note: richTextProperty("Need clearer hiring priorities; juggling interviews.")
+    });
+
+  await createOrFindSafeRow(notion, registry.moodLogs, `${demoSeed.people.buddy.name} - Mood Today`, {
+      "Mood Entry": pageTitleProperty(`${demoSeed.people.buddy.name} - Mood Today`),
+      Employee: relationValue([buddy.id]),
+      Date: dateProperty("2026-03-10"),
+      Mood: selectProperty("Great"),
+      Energy: { number: 5 },
+      Clarity: { number: 5 },
+      Support: { number: 4 },
+      Note: richTextProperty("Enjoying mentoring the new hire; bandwidth good.")
     });
 
   await createOrFindSafeRow(notion, registry.recognition, "Shoutout for onboarding improvements", {
