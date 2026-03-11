@@ -41,52 +41,58 @@ Workspace path for this submission: `/Users/ujja/code/personal/echohr`
 
 ```mermaid
 flowchart LR
-    subgraph Hiring
-      C[Candidates] -->|page_created\n/webhooks/notion| A[Applications]
-      A --> I[Interviews]
-      I -->|/webhooks/meeting-notes| Fbk[AI Feedback]
-      I -->|/ops/feedback-sweep| Slack
-      C -->|SLA task| T[Tasks]
-      A --> O[Offers]
-    end
+    %% Core flow
+    C[Candidates] -->|create| A[Applications]
+    A --> I[Interviews]
+    I -->|notes -> /meeting-notes| Fbk[AI Feedback]
+    I -->|SLA sweep| Slack
+    A --> O[Offers]
+    O -->|Accepted| J[Onboarding]
+    J --> CHK[Check-ins]
+    CHK --> G[Goals]
+    G --> ACH[Achievements]
+    ACH --> PR[Performance Reviews]
+    PR --> CE[Comp Events]
+    CE --> Off[Offboarding]
+    Off --> KT[Knowledge Transfer]
+    KT --> Alumni[Alumni]
 
-    subgraph Onboarding
-      O -->|status=Accepted /webhooks/notion| J[Onboarding Journeys]
-      J --> CHK[Monthly Check-ins x6]
-      J --> T
-    end
+    %% Supporting data
+    People[People DB] --- A
+    People --- O
+    People --- J
+    People --- PR
+    People --- CE
+    People --- Off
+    People --- Alumni
 
-    subgraph Growth & Performance
-      G[Goals] --> ACH[Achievements]
-      ACH --> PR[Performance Reviews]
-      PR -->|AI summaries| Fbk
-      PR --> CE[Compensation Events]
-    end
+    %% Culture side-rail
+    Pulse[Pulse Surveys] --> People
+    Recog[Recognition] --> People
+    Mood[Mood of Day] --> People
 
-    subgraph Culture & Engagement
-      Pulse[Pulse Surveys] --> People
-      Recog[Recognition] --> People
-      Mood[Mood of Day] --> People
-    end
-
-    subgraph Offboarding & Alumni
-      Off[Offboarding Cases] --> KT[Knowledge Transfers]
-      KT --> Alumni[Alumni]
-      Off --> Alumni
-    end
-
-    People[People DB] -->|manager/buddy| People
-    A --> People
-    O --> People
-    J --> People
-    PR --> People
-    CE --> People
-    Off --> People
-    T --> Slack
+    %% Automation + MCP touchpoints
+    T[Tasks] -. SLA .-> Slack
+    C -->|SLA task| T
+    Figma -. Ready for Review .-> T
+    Calendar -. schedule .-> CHK
     Slack -. MCP .-> Automation[Automation Server]
-    Figma -. MCP .-> T
-    Calendar -. MCP .-> CHK
     OpenAI -. summaries .-> Fbk
+
+    %% Styling
+    classDef hiring fill:#ffe8c2,stroke:#f39c12,color:#000,font-weight:bold;
+    classDef onboard fill:#e3f6ff,stroke:#00a3e0,color:#00334d,font-weight:bold;
+    classDef growth fill:#e6ffe6,stroke:#22a96a,color:#0a3d2d,font-weight:bold;
+    classDef culture fill:#f0e5ff,stroke:#9b59b6,color:#2e004d,font-weight:bold;
+    classDef exit fill:#ffe5e5,stroke:#e74c3c,color:#5c0000,font-weight:bold;
+    classDef infra fill:#f7f7f7,stroke:#95a5a6,color:#2c3e50,font-weight:bold;
+
+    class C,A,I,O hiring;
+    class J,CHK onboard;
+    class G,ACH,PR,CE growth;
+    class Pulse,Recog,Mood culture;
+    class Off,KT,Alumni exit;
+    class People,T,Slack,Figma,Calendar,Automation,OpenAI,Fbk infra;
 ```
 
 <!-- Team Submissions: Please pick one member to publish the submission and credit teammates by listing their DEV usernames directly in the body of the post. -->
