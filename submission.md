@@ -11,9 +11,15 @@ Repo: https://github.com/your-org/echohr
 Workspace path for this submission: `/Users/ujja/code/personal/echohr`
 
 ## How I Used Notion MCP
+- Notion MCP (hosted): primary CRUD + schema for all lifecycle data sources; one-click provisioning (`npm run demo`) and ongoing agent ops (update statuses, log check-ins, post summaries).
+- Slack MCP: send human-first updates (no-ghosting nudges, offer accept/onboarding alerts, overdue-feedback pings) straight from agents and webhooks.
+- Figma MCP: convert “Ready for Review” comments into Notion review tasks and Slack notifications for design → PM/Eng handoff.
+- Calendar MCP (pattern): schedule interview loops or post-offer check-ins when agents call the calendar MCP after creating tasks.
+- OpenAI MCP (via automation server): `/webhooks/meeting-notes` turns raw interview/review/exit notes into AI summaries, candidate-safe feedback, and manager actions written back to Notion.
 - Drove Notion’s `data_source` APIs through MCP: create pages, data sources, relations, and rollups; seed demo data; persist install state for idempotent re-runs.
 - Provisioned 20+ interconnected data sources (People, Roles, Candidates, Applications, Interviews, Offers, Journeys, Check-ins, Goals, Achievements, Reviews, Compensation, Tasks, Automation Log, etc.) with dual relations and SLA rollups for “no-ghosting” guardrails.
 - Added MCP-friendly automation playbooks for Slack/email/calendar + OpenAI summarization hooks (feedback, reviews, exit notes).
+- Meeting notes → AI feedback: `/webhooks/meeting-notes` converts raw interview/review notes into AI summaries (candidate-safe + manager actions), writes them back to Notion, and pings Slack so feedback never stalls.
 - Implemented versioned installs (`--force-new`) with automatic unarchiving and schema refresh, so hackathon teams can iterate safely and always know the “latest” workspace.
 - Seeded realistic 50-person startup org, open roles, live pipeline, check-ins, reviews, promotions, exits, recognition, and pulse surveys—ready for dashboards and AI summaries out of the box.
 - Webhook automation (automation-server): Notion events trigger downstream actions (new Candidate → Application + SLA task; Offer Accepted → Onboarding journey + 3 monthly check-ins) with Slack notifications optional.
@@ -32,6 +38,56 @@ Workspace path for this submission: `/Users/ujja/code/personal/echohr`
 - Formula properties cannot be updated after creation; they’re set at provision time only.
 
 <!-- Optional: Add a cover image here, e.g., ![EchoHR Cover](cover.png) -->
+
+```mermaid
+flowchart LR
+    subgraph Hiring
+      C[Candidates] -->|page_created\n/webhooks/notion| A[Applications]
+      A --> I[Interviews]
+      I -->|/webhooks/meeting-notes| Fbk[AI Feedback]
+      I -->|/ops/feedback-sweep| Slack
+      C -->|SLA task| T[Tasks]
+      A --> O[Offers]
+    end
+
+    subgraph Onboarding
+      O -->|status=Accepted\n/webhooks/notion| J[Onboarding Journeys]
+      J --> CHK[Monthly Check-ins (6)]
+      J --> T
+    end
+
+    subgraph Growth & Performance
+      G[Goals] --> ACH[Achievements]
+      ACH --> PR[Performance Reviews]
+      PR -->|AI summaries| Fbk
+      PR --> CE[Compensation Events]
+    end
+
+    subgraph Culture & Engagement
+      Pulse[Pulse Surveys] --> People
+      Recog[Recognition] --> People
+      Mood[Mood of Day] --> People
+    end
+
+    subgraph Offboarding & Alumni
+      Off[Offboarding Cases] --> KT[Knowledge Transfers]
+      KT --> Alumni[Alumni]
+      Off --> Alumni
+    end
+
+    People[People DB] -->|manager/buddy| People
+    A --> People
+    O --> People
+    J --> People
+    PR --> People
+    CE --> People
+    Off --> People
+    T --> Slack
+    Slack -. MCP .-> Automation[Automation Server]
+    Figma -. MCP .-> T
+    Calendar -. MCP .-> CHK
+    OpenAI -. summaries .-> Fbk
+```
 
 <!-- Team Submissions: Please pick one member to publish the submission and credit teammates by listing their DEV usernames directly in the body of the post. -->
 
