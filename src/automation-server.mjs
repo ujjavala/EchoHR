@@ -6,6 +6,7 @@ import { handleFigmaWebhook } from "./handlers/figma-handler.mjs";
 import { handleMeetingNotesWebhook } from "./handlers/meeting-notes-handler.mjs";
 import { feedbackSweep } from "./handlers/feedback-sweep-handler.mjs";
 import { processNotionWebhook } from "./handlers/notion-webhook-handler.mjs";
+import { statusSweep } from "./handlers/status-sweep-handler.mjs";
 import { loadFeatureFlags, getFeatureFlags, isFeatureEnabled, setFeatureFlags } from "./lib/feature-flags.mjs";
 
 loadDotEnv();
@@ -124,6 +125,13 @@ const server = createServer(async (request, response) => {
       const state = await loadInstallState();
       if (!state) return json(response, 200, { ok: false, reason: "No install state" });
       const result = await feedbackSweep(notion(), state);
+      return json(response, 200, result);
+    }
+
+    if (request.method === "POST" && url.pathname === "/ops/status-sweep") {
+      const state = await loadInstallState();
+      if (!state) return json(response, 200, { ok: false, reason: "No install state" });
+      const result = await statusSweep(notion(), state);
       return json(response, 200, result);
     }
 

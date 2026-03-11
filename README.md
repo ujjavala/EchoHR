@@ -50,6 +50,8 @@ Optional:
 - `OPENAI_MODEL`
 - `SLACK_BOT_TOKEN`
 - `SLACK_DEFAULT_CHANNEL`
+- `LOGO_URL` (optional external image for the root icon/top hero block)
+- `HERO_VIDEO_URL` (optional external video/embed shown on each section page)
 - `FEATURE_FLAGS_PATH` (defaults to `config/feature-flags.json`)
 - `PORT` defaults to `8787`
 
@@ -112,6 +114,7 @@ Webhook + automation endpoints (MCP-friendly):
 - `POST /summaries/interview|review|exit` — OpenAI summaries ready to write back to Notion
 - `POST /ops/feedback-sweep` — finds interviews completed >7 days with no feedback and pings Slack (and optional EMAIL_WEBHOOK)
 - `POST /ops/feature-flags` — override feature flags at runtime `{ "flags": { "slack_notifications": false, ... } }`
+- `POST /ops/status-sweep` — scan recent edits (last 15m) across lifecycle DBs and post Slack status updates
 - `GET /health` — status
 
 Make/Zapier/Figma glue:

@@ -30,6 +30,7 @@
 1. Verify token and channel (`SLACK_BOT_TOKEN`, `SLACK_DEFAULT_CHANNEL`).
 2. Check feature flag `slack_notifications:true`.
 3. Ensure bot is invited to the channel.
+4. For status updates, either forward Notion page_updated webhooks to `/webhooks/notion` or run `curl -X POST http://127.0.0.1:8787/ops/status-sweep` to pull recent edits.
 
 ## Rolling back/refreshing install
 1. Delete `.echohr-install-state.json`.

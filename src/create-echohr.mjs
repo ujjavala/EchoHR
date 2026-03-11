@@ -78,7 +78,7 @@ function rollupProperty(relationPropertyId, relationPropertyName, rollupProperty
 }
 
 function topLevelIntroBlocks() {
-  return [
+  const blocks = [
     heading(1, "EchoHR"),
     paragraph("EchoHR is a Notion-native employee lifecycle system built around clarity, empathy, and speed."),
     callout("Rejections hurt, but ghosting hurts even more. Everyone deserves timely feedback and clarity.", "💬"),
@@ -86,6 +86,19 @@ function topLevelIntroBlocks() {
     bulleted("Automations should feel human: personalized reminders, clear ownership, and visible timelines."),
     bulleted("AI should summarize and surface insight, not replace judgment.")
   ];
+
+  if (process.env.LOGO_URL) {
+    blocks.unshift({
+      object: "block",
+      type: "image",
+      image: {
+        type: "external",
+        external: { url: process.env.LOGO_URL }
+      }
+    });
+  }
+
+  return blocks;
 }
 
 function viewGuideBlocks() {
@@ -286,12 +299,38 @@ function landingBlocks(root, sectionPages) {
   return [hero, navLine, ctaRow, metricsRow, featureGrid, todayPanel, charts];
 }
 
-function sectionBlocks(section) {
-  return [
+function mediaEmbed(url, type = "video") {
+  if (!url) return null;
+  return {
+    object: "block",
+    type: "embed",
+    embed: { url }
+  };
+}
+
+function heroImage(url) {
+  if (!url) return null;
+  return {
+    object: "block",
+    type: "image",
+    image: { type: "external", external: { url } }
+  };
+}
+
+function sectionBlocks(section, sectionPages, covers) {
+  const blocks = [
     heading(2, section.title),
     paragraph(section.description),
-    callout("Build recommended filtered views in the Notion UI after provisioning. Notion's API does not currently manage view layouts.", "🛠️")
+    callout("Build the recommended filtered views in Notion’s UI after provisioning. The API cannot create views, but links below jump you into each DB.", "🛠️")
   ];
+
+  const hero = heroImage(covers[section.key] || covers.root);
+  if (hero) blocks.splice(1, 0, hero);
+
+  const video = mediaEmbed(process.env.HERO_VIDEO_URL);
+  if (video) blocks.push(video);
+
+  return blocks;
 }
 
 function playbookBlocks(playbook) {
@@ -416,7 +455,15 @@ async function createPageHierarchy(notion, parentPageId, version) {
         page_id: root.id
       },
       title: section.title,
-      children: sectionBlocks(section)
+      children: sectionBlocks(section, sectionPages, {
+        root: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80",
+        hiring: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
+        onboarding: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1600&q=80",
+        growth: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
+        culture: "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1600&q=80",
+        offboarding: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80",
+        automation: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1600&q=80"
+      })
     });
     sectionPages[section.key] = page;
   }
@@ -441,7 +488,7 @@ async function stylePages(notion, root, sectionPages) {
   await notion.request(`/v1/pages/${root.id}`, {
     method: "PATCH",
     body: {
-      icon: { type: "emoji", emoji: "💠" },
+      icon: process.env.LOGO_URL ? { type: "external", external: { url: process.env.LOGO_URL } } : { type: "emoji", emoji: "💠" },
       cover: { type: "external", external: { url: covers.root } }
     }
   });
