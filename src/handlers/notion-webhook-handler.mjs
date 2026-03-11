@@ -3,6 +3,30 @@ import { pickTitle } from "../lib/feedback.mjs";
 import { sendSlackMessage } from "../lib/slack.mjs";
 import { isFeatureEnabled } from "../lib/feature-flags.mjs";
 
+const STATUS_FIELDS_BY_DB = {
+  candidates: ["Candidate Status", "Stage"],
+  applications: ["Application Status", "Pipeline Stage"],
+  offers: ["Offer Status"],
+  onboardingJourneys: ["Journey Status"],
+  checkins: ["Status"],
+  performanceReviews: ["Review Status"],
+  offboardingCases: ["Status"],
+  tasks: ["Status"],
+  goals: ["Status"]
+};
+
+function statusMessage(dbKey, page) {
+  const props = page.properties || {};
+  const fields = STATUS_FIELDS_BY_DB[dbKey] || [];
+  const pieces = [];
+  for (const name of fields) {
+    const val = props[name]?.select?.name || props[name]?.status?.name;
+    if (val) pieces.push(`${name}: ${val}`);
+  }
+  if (!pieces.length) return null;
+  return `${pickTitle(page)} — ${pieces.join(" · ")}`;
+}
+
 async function createApplicationFromCandidate(notionClient, state, candidatePageId) {
   const candidateDs = state.databases?.candidates?.dataSourceId;
   const applicationsDs = state.databases?.applications?.dataSourceId;
@@ -149,6 +173,23 @@ export async function processNotionWebhook(body, notionClient, state) {
           channel: process.env.SLACK_DEFAULT_CHANNEL
         }).catch(() => null);
         continue;
+      }
+    }
+
+    // Status change notifications across lifecycle
+    if (event?.type === "page_updated") {
+      const dbKey = Object.keys(state.databases || {}).find((k) => state.databases[k].dataSourceId === dsId);
+      if (dbKey && STATUS_FIELDS_BY_DB[dbKey]?.length) {
+        const page = await notionClient.request(`/v1/pages/${pageId}`);
+        const msg = statusMessage(dbKey, page);
+        if (msg) {
+          await sendSlackMessage({
+            text: `Status update (${dbKey}): ${msg}`,
+            channel: process.env.SLACK_DEFAULT_CHANNEL
+          }).catch(() => null);
+          results.push({ ok: true, notified: true, db: dbKey, pageId });
+          continue;
+        }
       }
     }
 
