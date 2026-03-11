@@ -262,6 +262,49 @@ Automation assets live in:
 
 Lifecycle automation intent:
 
+```mermaid
+flowchart LR
+    %% Lifecycle ribbon (left -> right)
+    C[Candidates] --> A[Applications] --> I[Interviews] --> O[Offers] --> J[Onboarding] --> CHK[Check-ins] --> G[Goals] --> ACH[Achievements] --> PR[Performance Reviews] --> CE[Comp Events] --> Off[Offboarding] --> KT[Knowledge Transfer] --> Alumni[Alumni]
+
+    %% Feedback/AI thread
+    I -. notes .-> Fbk[AI Feedback]
+    PR -. notes .-> Fbk
+    Fbk -. summaries .-> I
+    Fbk -. summaries .-> PR
+
+    %% Culture & pulse thread
+    Pulse[Pulse Surveys] --> People
+    Recog[Recognition] --> People
+    Mood[Mood of Day] --> People
+    People --> CHK
+    People --> PR
+    People --> Off
+    People --> Alumni
+
+    %% Automation & MCP touchpoints
+    C -. SLA task .-> T[Tasks]
+    I -. overdue check .-> Slack
+    T -.-> Slack
+    Figma -. Ready for Review .-> T
+    Calendar -. schedule .-> CHK
+    Slack -. MCP .-> Automation[Automation Server]
+    OpenAI -. summaries .-> Fbk
+
+    %% Styling
+    classDef hiring fill:#ffe8c2,stroke:#f39c12,color:#000,font-weight:bold;
+    classDef onboard fill:#e3f6ff,stroke:#00a3e0,color:#00334d,font-weight:bold;
+    classDef growth fill:#e6ffe6,stroke:#22a96a,color:#0a3d2d,font-weight:bold;
+    classDef exit fill:#ffe5e5,stroke:#e74c3c,color:#5c0000,font-weight:bold;
+    classDef infra fill:#f7f7f7,stroke:#95a5a6,color:#2c3e50,font-weight:bold;
+
+    class C,A,I hiring;
+    class O,J,CHK onboard;
+    class G,ACH,PR,CE growth;
+    class Off,KT,Alumni exit;
+    class People,T,Slack,Figma,Calendar,Automation,OpenAI,Fbk,Pulse,Recog,Mood infra;
+```
+
 - zero ghosting for candidates through explicit update deadlines
 - zero silent appraisal cycles through linked goals, achievements, and feedback nudges
 - visible onboarding, check-in, review, offboarding, and alumni next steps
