@@ -91,6 +91,12 @@ Run the local automation server:
 npm run automation-server
 ```
 
+MCP-style polling (no webhooks):  
+```bash
+STATUS_WATCH_WINDOW_MIN=15 npm run mcp-status-watch
+```
+Reads `.echohr-install-state.json`, queries recent edits, and posts Slack status updates without Notion webhooks.
+
 Expose the local automation server as an MCP endpoint (for STDIO-only MCP clients):
 
 ```bash

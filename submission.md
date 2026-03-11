@@ -33,6 +33,7 @@ Repo: https://github.com/your-org/echohr
 - Visual polish: optional `LOGO_URL` injects your logo into the root hero/icon; `HERO_VIDEO_URL` embeds a hero video on each section page; Unsplash covers are auto-set per section.
 - Figma/Feedback automation: `/webhooks/figma` turns “Ready for Review” comments into Notion Review tasks + Slack; `/webhooks/meeting-notes` posts AI feedback into interviews/reviews; `/ops/feedback-sweep` reminds on >7-day stale feedback.
 - Lifecycle status pings: `/webhooks/notion` (page_updated) and `/ops/status-sweep` post Slack updates when lifecycle statuses change (candidates, offers, onboarding, tasks, reviews, offboarding).
+- MCP-only polling: `npm run mcp-status-watch` queries recent edits (no webhooks) and posts Slack status updates.
 
 ## Limitations (current Notion constraints)
 - Notion API/MCP cannot create or edit database views; view setup (boards, timelines, galleries, charts) must be done manually in the UI. We auto-create “Setup Views” and “View Setup Checklist” pages to guide the clicks. If desired, I can hop into your workspace and flip the views for you; the platform simply doesn’t expose view configuration via API/MCP yet.
