@@ -477,9 +477,9 @@ async function stylePages(notion, root, sectionPages) {
     root: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80",
     hiring: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
     onboarding: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1600&q=80",
-    growth: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
-    culture: "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1600&q=80",
-    offboarding: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80",
+    growth: "https://unsplash.com/photos/group-of-happy-business-people-and-company-staff-mP6zdBShhVI?auto=format&fit=crop&w=1600&q=80",
+    culture: "https://unsplash.com/photos/three-people-sitting-in-front-of-table-laughing-together-g1Kr4Ozfoac?auto=format&fit=crop&w=1600&q=80",
+    offboarding: "https://unsplash.com/photos/woman-carrying-box-of-belongings-leaving-office-u6pzdg6fWLI?auto=format&fit=crop&w=1600&q=80",
     automation: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1600&q=80"
   };
 
@@ -723,14 +723,14 @@ async function applyRollups(notion, registry) {
 async function seedTemplates(notion, registry) {
   for (const template of seededTemplates) {
     await createOrFindSafeRow(notion, registry.templates, template.name, {
-        "Template Name": pageTitleProperty(template.name),
-        "Template Type": selectProperty(template.type),
-        Audience: selectProperty(template.audience),
-        "Trigger Event": selectProperty(template.trigger),
-        Subject: richTextProperty(template.subject),
-        Body: richTextProperty(template.body),
-        Active: checkboxProperty(true)
-      }, templateBlocks(template));
+      "Template Name": pageTitleProperty(template.name),
+      "Template Type": selectProperty(template.type),
+      Audience: selectProperty(template.audience),
+      "Trigger Event": selectProperty(template.trigger),
+      Subject: richTextProperty(template.subject),
+      Body: richTextProperty(template.body),
+      Active: checkboxProperty(true)
+    }, templateBlocks(template));
   }
 }
 
@@ -762,356 +762,356 @@ async function seedDemoContent(notion, registry) {
   const exitingPerson = await createOrFindDemoPerson(notion, registry, demoSeed.people.exiting, { managerId: headPeople.id });
 
   const role = await createOrFindSafeRow(notion, registry.roles, demoSeed.role.title, {
-      "Role Name": pageTitleProperty(demoSeed.role.title),
-      Department: selectProperty(demoSeed.role.department),
-      Level: selectProperty(demoSeed.role.level),
-      "Employment Type": selectProperty(demoSeed.role.type),
-      Location: multiSelectProperty(demoSeed.role.location),
-      "Hiring Status": selectProperty(demoSeed.role.status),
-      "Open Date": dateProperty(demoSeed.role.openDate),
-      "Target Fill Date": dateProperty(demoSeed.role.targetFillDate),
-      "Interview Plan": richTextProperty(demoSeed.role.interviewPlan),
-      "Stage SLA Days": { number: demoSeed.role.stageSlaDays },
-      "Offer Approval Required": checkboxProperty(true),
-      "Hiring Manager": relationValue([manager.id]),
-      Recruiter: relationValue([recruiter.id])
-    });
+    "Role Name": pageTitleProperty(demoSeed.role.title),
+    Department: selectProperty(demoSeed.role.department),
+    Level: selectProperty(demoSeed.role.level),
+    "Employment Type": selectProperty(demoSeed.role.type),
+    Location: multiSelectProperty(demoSeed.role.location),
+    "Hiring Status": selectProperty(demoSeed.role.status),
+    "Open Date": dateProperty(demoSeed.role.openDate),
+    "Target Fill Date": dateProperty(demoSeed.role.targetFillDate),
+    "Interview Plan": richTextProperty(demoSeed.role.interviewPlan),
+    "Stage SLA Days": { number: demoSeed.role.stageSlaDays },
+    "Offer Approval Required": checkboxProperty(true),
+    "Hiring Manager": relationValue([manager.id]),
+    Recruiter: relationValue([recruiter.id])
+  });
 
   const candidate = await createOrFindSafeRow(notion, registry.candidates, demoSeed.candidate.name, {
-      "Candidate Name": pageTitleProperty(demoSeed.candidate.name),
-      Person: relationValue([candidatePerson.id]),
-      "Primary Role": relationValue([role.id]),
-      "Candidate Status": selectProperty("Interviewing"),
-      Stage: selectProperty("Panel"),
-      "Stage Owner": relationValue([recruiter.id]),
-      "Applied On": dateProperty(demoSeed.candidate.appliedOn),
-      "Last Update Sent": dateProperty(demoSeed.candidate.lastUpdateSent),
-      "Candidate Portal Link": { url: demoSeed.candidate.portalUrl },
-      Source: selectProperty("Referral"),
-      Sentiment: selectProperty("Positive"),
-      "Personalized Next Step": richTextProperty(demoSeed.candidate.nextStep)
-    });
+    "Candidate Name": pageTitleProperty(demoSeed.candidate.name),
+    Person: relationValue([candidatePerson.id]),
+    "Primary Role": relationValue([role.id]),
+    "Candidate Status": selectProperty("Interviewing"),
+    Stage: selectProperty("Panel"),
+    "Stage Owner": relationValue([recruiter.id]),
+    "Applied On": dateProperty(demoSeed.candidate.appliedOn),
+    "Last Update Sent": dateProperty(demoSeed.candidate.lastUpdateSent),
+    "Candidate Portal Link": { url: demoSeed.candidate.portalUrl },
+    Source: selectProperty("Referral"),
+    Sentiment: selectProperty("Positive"),
+    "Personalized Next Step": richTextProperty(demoSeed.candidate.nextStep)
+  });
 
   const application = await createOrFindSafeRow(notion, registry.applications, "APP-001", {
-      "Application ID": pageTitleProperty("APP-001"),
-      Candidate: relationValue([candidate.id]),
-      Role: relationValue([role.id]),
-      "Application Status": selectProperty("Active"),
-      "Pipeline Stage": selectProperty("Interview Loop"),
-      "Applied Date": dateProperty(demoSeed.candidate.appliedOn),
-      "Resume URL": { url: demoSeed.candidate.resumeUrl },
-      "Portfolio URL": { url: demoSeed.candidate.portfolioUrl },
-      "Scheduler Link": { url: demoSeed.candidate.schedulerUrl },
-      "AI Feedback Summary": richTextProperty(demoSeed.candidate.aiSummary),
-      "Decision Recommendation": selectProperty("Yes"),
-      "Candidate Message Draft": richTextProperty(demoSeed.candidate.messageDraft)
-    });
+    "Application ID": pageTitleProperty("APP-001"),
+    Candidate: relationValue([candidate.id]),
+    Role: relationValue([role.id]),
+    "Application Status": selectProperty("Active"),
+    "Pipeline Stage": selectProperty("Interview Loop"),
+    "Applied Date": dateProperty(demoSeed.candidate.appliedOn),
+    "Resume URL": { url: demoSeed.candidate.resumeUrl },
+    "Portfolio URL": { url: demoSeed.candidate.portfolioUrl },
+    "Scheduler Link": { url: demoSeed.candidate.schedulerUrl },
+    "AI Feedback Summary": richTextProperty(demoSeed.candidate.aiSummary),
+    "Decision Recommendation": selectProperty("Yes"),
+    "Candidate Message Draft": richTextProperty(demoSeed.candidate.messageDraft)
+  });
 
   await createOrFindSafeRow(notion, registry.interviews, `${demoSeed.candidate.name} - Panel Interview`, {
-      "Interview Title": pageTitleProperty(`${demoSeed.candidate.name} - Panel Interview`),
-      Application: relationValue([application.id]),
-      Interviewer: relationValue([manager.id]),
-      Coordinator: relationValue([recruiter.id]),
-      "Interview Type": selectProperty("Panel"),
-      "Scheduled For": dateProperty(demoSeed.candidate.interviewDate),
-      "Meeting Link": { url: demoSeed.candidate.meetingUrl },
-      Status: selectProperty("Scheduled"),
-      Score: { number: 4 },
-      Strengths: richTextProperty("Strong systems thinking, clear communication, and empathy."),
-      Concerns: richTextProperty("Needs deeper examples of design ops scaling."),
-      Recommendation: selectProperty("Yes"),
-      "AI Summary": richTextProperty("Candidate is progressing well. Provide timeline clarity and close the loop within 48 hours.")
-    });
+    "Interview Title": pageTitleProperty(`${demoSeed.candidate.name} - Panel Interview`),
+    Application: relationValue([application.id]),
+    Interviewer: relationValue([manager.id]),
+    Coordinator: relationValue([recruiter.id]),
+    "Interview Type": selectProperty("Panel"),
+    "Scheduled For": dateProperty(demoSeed.candidate.interviewDate),
+    "Meeting Link": { url: demoSeed.candidate.meetingUrl },
+    Status: selectProperty("Scheduled"),
+    Score: { number: 4 },
+    Strengths: richTextProperty("Strong systems thinking, clear communication, and empathy."),
+    Concerns: richTextProperty("Needs deeper examples of design ops scaling."),
+    Recommendation: selectProperty("Yes"),
+    "AI Summary": richTextProperty("Candidate is progressing well. Provide timeline clarity and close the loop within 48 hours.")
+  });
 
   const offerTemplate = await createOrFindSafeRow(notion, registry.templates, "Offer Letter - Demo Attach", {
-      "Template Name": pageTitleProperty("Offer Letter - Demo Attach"),
-      "Template Type": selectProperty("Offer Letter"),
-      Audience: selectProperty("Candidate"),
-      "Trigger Event": selectProperty("Offer Sent"),
-      Subject: richTextProperty("EchoHR offer letter"),
-      Body: richTextProperty("Demo offer letter template linked to the seeded offer."),
-      Active: checkboxProperty(true)
-    });
+    "Template Name": pageTitleProperty("Offer Letter - Demo Attach"),
+    "Template Type": selectProperty("Offer Letter"),
+    Audience: selectProperty("Candidate"),
+    "Trigger Event": selectProperty("Offer Sent"),
+    Subject: richTextProperty("EchoHR offer letter"),
+    Body: richTextProperty("Demo offer letter template linked to the seeded offer."),
+    Active: checkboxProperty(true)
+  });
 
   await createOrFindSafeRow(notion, registry.offers, "OFF-001", {
-      "Offer ID": pageTitleProperty("OFF-001"),
-      Candidate: relationValue([candidate.id]),
-      Application: relationValue([application.id]),
-      "Offer Status": selectProperty("Draft"),
-      "Compensation Band": richTextProperty("Design L5"),
-      "Base Salary": { number: 155000 },
-      Equity: richTextProperty("0.08%"),
-      Bonus: { number: 15000 },
-      "Start Date Proposed": dateProperty("2026-04-06"),
-      "Offer Document URL": { url: "https://example.com/offers/off-001" },
-      "Response Due": dateProperty("2026-03-20"),
-      "Candidate Questions": richTextProperty("Clarify learning budget and remote travel policy."),
-      "Approval Owner": relationValue([manager.id]),
-      "Offer Letter Template": relationValue([offerTemplate.id])
-    });
+    "Offer ID": pageTitleProperty("OFF-001"),
+    Candidate: relationValue([candidate.id]),
+    Application: relationValue([application.id]),
+    "Offer Status": selectProperty("Draft"),
+    "Compensation Band": richTextProperty("Design L5"),
+    "Base Salary": { number: 155000 },
+    Equity: richTextProperty("0.08%"),
+    Bonus: { number: 15000 },
+    "Start Date Proposed": dateProperty("2026-04-06"),
+    "Offer Document URL": { url: "https://example.com/offers/off-001" },
+    "Response Due": dateProperty("2026-03-20"),
+    "Candidate Questions": richTextProperty("Clarify learning budget and remote travel policy."),
+    "Approval Owner": relationValue([manager.id]),
+    "Offer Letter Template": relationValue([offerTemplate.id])
+  });
 
   const journey = await createOrFindSafeRow(notion, registry.onboardingJourneys, `${demoSeed.people.employee.name} - Onboarding`, {
-      "Journey Name": pageTitleProperty(`${demoSeed.people.employee.name} - Onboarding`),
-      Employee: relationValue([employee.id]),
-      "Start Date": dateProperty(demoSeed.people.employee.startDate),
-      "Journey Status": selectProperty("Month 1"),
-      "Personal Goals": richTextProperty("Ship first workflow improvement and meet the wider product org."),
-      "Intro Message": richTextProperty("Welcome. Your portal shows your plan, buddy, and support check-ins."),
-      "New Hire Portal": { url: "https://example.com/portal/lena" }
-    });
+    "Journey Name": pageTitleProperty(`${demoSeed.people.employee.name} - Onboarding`),
+    Employee: relationValue([employee.id]),
+    "Start Date": dateProperty(demoSeed.people.employee.startDate),
+    "Journey Status": selectProperty("Month 1"),
+    "Personal Goals": richTextProperty("Ship first workflow improvement and meet the wider product org."),
+    "Intro Message": richTextProperty("Welcome. Your portal shows your plan, buddy, and support check-ins."),
+    "New Hire Portal": { url: "https://example.com/portal/lena" }
+  });
 
   await createOrFindSafeRow(notion, registry.tasks, "Set up development environment", {
-      Task: pageTitleProperty("Set up development environment"),
-      "Task Type": selectProperty("Onboarding"),
-      "Related Person": relationValue([employee.id]),
-      Journey: relationValue([journey.id]),
-      Owner: relationValue([employee.id]),
-      "Due Date": dateProperty("2026-02-06"),
-      Status: selectProperty("Done"),
-      Priority: selectProperty("High"),
-      "Auto-created": checkboxProperty(true),
-      "Empathy Note": richTextProperty("If anything feels blocked, ask your buddy before it compounds.")
-    });
+    Task: pageTitleProperty("Set up development environment"),
+    "Task Type": selectProperty("Onboarding"),
+    "Related Person": relationValue([employee.id]),
+    Journey: relationValue([journey.id]),
+    Owner: relationValue([employee.id]),
+    "Due Date": dateProperty("2026-02-06"),
+    Status: selectProperty("Done"),
+    Priority: selectProperty("High"),
+    "Auto-created": checkboxProperty(true),
+    "Empathy Note": richTextProperty("If anything feels blocked, ask your buddy before it compounds.")
+  });
 
   await createOrFindSafeRow(notion, registry.tasks, "Run 30-day onboarding check-in", {
-      Task: pageTitleProperty("Run 30-day onboarding check-in"),
-      "Task Type": selectProperty("Onboarding"),
-      "Related Person": relationValue([employee.id]),
-      Journey: relationValue([journey.id]),
-      Owner: relationValue([manager.id]),
-      "Due Date": dateProperty("2026-03-04"),
-      Status: selectProperty("In Progress"),
-      Priority: selectProperty("High"),
-      "Auto-created": checkboxProperty(true),
-      "Empathy Note": richTextProperty("Ask what support would make the next month easier, not just what is on track.")
-    });
+    Task: pageTitleProperty("Run 30-day onboarding check-in"),
+    "Task Type": selectProperty("Onboarding"),
+    "Related Person": relationValue([employee.id]),
+    Journey: relationValue([journey.id]),
+    Owner: relationValue([manager.id]),
+    "Due Date": dateProperty("2026-03-04"),
+    Status: selectProperty("In Progress"),
+    Priority: selectProperty("High"),
+    "Auto-created": checkboxProperty(true),
+    "Empathy Note": richTextProperty("Ask what support would make the next month easier, not just what is on track.")
+  });
 
   const checkin = await createOrFindSafeRow(notion, registry.checkins, `${demoSeed.people.employee.name} - 30 Day`, {
-      "Check-in Name": pageTitleProperty(`${demoSeed.people.employee.name} - 30 Day`),
-      Employee: relationValue([employee.id]),
-      Manager: relationValue([manager.id]),
-      "Check-in Type": selectProperty("30-day"),
-      "Scheduled Date": dateProperty("2026-03-04"),
-      Status: selectProperty("Completed"),
-      "Employee Wins": richTextProperty("Improved onboarding docs and shipped first retention dashboard draft."),
-      "Employee Challenges": richTextProperty("Still learning internal approvals and cross-team communication paths."),
-      "Support Needed": richTextProperty("More examples of effective product reviews."),
-      "Mood Score": { number: 4 },
-      "AI Summary": richTextProperty("Positive momentum. Main need is more context on internal process and review culture."),
-      "Next Actions": richTextProperty("Buddy to share two review examples. Manager to add employee to roadmap prep.")
-    });
+    "Check-in Name": pageTitleProperty(`${demoSeed.people.employee.name} - 30 Day`),
+    Employee: relationValue([employee.id]),
+    Manager: relationValue([manager.id]),
+    "Check-in Type": selectProperty("30-day"),
+    "Scheduled Date": dateProperty("2026-03-04"),
+    Status: selectProperty("Completed"),
+    "Employee Wins": richTextProperty("Improved onboarding docs and shipped first retention dashboard draft."),
+    "Employee Challenges": richTextProperty("Still learning internal approvals and cross-team communication paths."),
+    "Support Needed": richTextProperty("More examples of effective product reviews."),
+    "Mood Score": { number: 4 },
+    "AI Summary": richTextProperty("Positive momentum. Main need is more context on internal process and review culture."),
+    "Next Actions": richTextProperty("Buddy to share two review examples. Manager to add employee to roadmap prep.")
+  });
 
   const goals = [];
   for (const goalSeed of demoSeed.goals) {
     const goal = await createOrFindSafeRow(notion, registry.goals, goalSeed.title, {
-        "Goal Title": pageTitleProperty(goalSeed.title),
-        Employee: relationValue([employee.id]),
-        Manager: relationValue([manager.id]),
-        "Check-in": relationValue([checkin.id]),
-        Cycle: selectProperty(goalSeed.cycle),
-        Category: selectProperty(goalSeed.category),
-        Status: selectProperty(goalSeed.status),
-        "Start Date": dateProperty(goalSeed.startDate),
-        "Due Date": dateProperty(goalSeed.dueDate),
-        "Success Metric": richTextProperty(goalSeed.successMetric),
-        "Progress %": { number: goalSeed.progress },
-        "Manager Notes": richTextProperty(goalSeed.managerNotes),
-        "Employee Update": richTextProperty(goalSeed.employeeUpdate),
-        "AI Coaching Note": richTextProperty(goalSeed.aiCoaching)
-      });
+      "Goal Title": pageTitleProperty(goalSeed.title),
+      Employee: relationValue([employee.id]),
+      Manager: relationValue([manager.id]),
+      "Check-in": relationValue([checkin.id]),
+      Cycle: selectProperty(goalSeed.cycle),
+      Category: selectProperty(goalSeed.category),
+      Status: selectProperty(goalSeed.status),
+      "Start Date": dateProperty(goalSeed.startDate),
+      "Due Date": dateProperty(goalSeed.dueDate),
+      "Success Metric": richTextProperty(goalSeed.successMetric),
+      "Progress %": { number: goalSeed.progress },
+      "Manager Notes": richTextProperty(goalSeed.managerNotes),
+      "Employee Update": richTextProperty(goalSeed.employeeUpdate),
+      "AI Coaching Note": richTextProperty(goalSeed.aiCoaching)
+    });
     goals.push(goal);
   }
 
   const achievements = [];
   for (const [index, achievementSeed] of demoSeed.achievements.entries()) {
     const achievement = await createOrFindSafeRow(notion, registry.achievements, achievementSeed.title, {
-        "Achievement Title": pageTitleProperty(achievementSeed.title),
-        Employee: relationValue([employee.id]),
-        Goal: relationValue([goals[Math.min(index, goals.length - 1)].id]),
-        Type: selectProperty(achievementSeed.type),
-        "Achievement Date": dateProperty(achievementSeed.date),
-        Impact: selectProperty(achievementSeed.impact),
-        Summary: richTextProperty(achievementSeed.summary),
-        Evidence: richTextProperty(achievementSeed.evidence),
-        "Manager Validation": selectProperty(achievementSeed.validation),
-        "AI Summary": richTextProperty(achievementSeed.aiSummary),
-        "Promotion Evidence": checkboxProperty(achievementSeed.promotionEvidence)
-      });
+      "Achievement Title": pageTitleProperty(achievementSeed.title),
+      Employee: relationValue([employee.id]),
+      Goal: relationValue([goals[Math.min(index, goals.length - 1)].id]),
+      Type: selectProperty(achievementSeed.type),
+      "Achievement Date": dateProperty(achievementSeed.date),
+      Impact: selectProperty(achievementSeed.impact),
+      Summary: richTextProperty(achievementSeed.summary),
+      Evidence: richTextProperty(achievementSeed.evidence),
+      "Manager Validation": selectProperty(achievementSeed.validation),
+      "AI Summary": richTextProperty(achievementSeed.aiSummary),
+      "Promotion Evidence": checkboxProperty(achievementSeed.promotionEvidence)
+    });
     achievements.push(achievement);
   }
 
   const compensation = await createOrFindSafeRow(notion, registry.compensationEvents, `${demoSeed.people.employee.name} - Promotion Review`, {
-      "Event Name": pageTitleProperty(`${demoSeed.people.employee.name} - Promotion Review`),
-      Employee: relationValue([employee.id]),
-      "Event Type": selectProperty("Promotion"),
-      "Effective Date": dateProperty("2026-06-01"),
-      "Current Level": richTextProperty("L3"),
-      "Proposed Level": richTextProperty("L4"),
-      "Current Salary": { number: 128000 },
-      "Proposed Salary": { number: 142000 },
-      "Business Case": richTextProperty("Employee has absorbed onboarding quickly and is already leading onboarding process improvements."),
-      Goals: relationValue(goals.map((goal) => goal.id)),
-      Achievements: relationValue(achievements.map((achievement) => achievement.id)),
-      "Approval Status": selectProperty("Manager Approved"),
-      "Notification Status": selectProperty("Pending"),
-      "Approval Owner": relationValue([manager.id])
-    });
+    "Event Name": pageTitleProperty(`${demoSeed.people.employee.name} - Promotion Review`),
+    Employee: relationValue([employee.id]),
+    "Event Type": selectProperty("Promotion"),
+    "Effective Date": dateProperty("2026-06-01"),
+    "Current Level": richTextProperty("L3"),
+    "Proposed Level": richTextProperty("L4"),
+    "Current Salary": { number: 128000 },
+    "Proposed Salary": { number: 142000 },
+    "Business Case": richTextProperty("Employee has absorbed onboarding quickly and is already leading onboarding process improvements."),
+    Goals: relationValue(goals.map((goal) => goal.id)),
+    Achievements: relationValue(achievements.map((achievement) => achievement.id)),
+    "Approval Status": selectProperty("Manager Approved"),
+    "Notification Status": selectProperty("Pending"),
+    "Approval Owner": relationValue([manager.id])
+  });
 
   const review = await createOrFindSafeRow(notion, registry.performanceReviews, `${demoSeed.people.employee.name} - Q1 2026`, {
-      "Review Name": pageTitleProperty(`${demoSeed.people.employee.name} - Q1 2026`),
-      Employee: relationValue([employee.id]),
-      "Review Cycle": selectProperty("Q1"),
-      "Review Status": selectProperty("Shared"),
-      "Review Due Date": dateProperty("2026-03-31"),
-      Goals: relationValue(goals.map((goal) => goal.id)),
-      Achievements: relationValue(achievements.map((achievement) => achievement.id)),
-      "Self Review": richTextProperty("Built trust quickly, improved onboarding docs, and supported candidate experience visibility."),
-      "Manager Review": richTextProperty("Strong first quarter. High ownership and strong cross-functional empathy."),
-      "Peer Inputs": richTextProperty("Great collaborator and proactive communicator."),
-      "Achievements Snapshot": richTextProperty("Two validated achievements linked: onboarding documentation refresh and retention dashboard draft."),
-      "Goal Progress": { number: 0.8 },
-      Rating: { number: 4 },
-      "Promotion Recommendation": selectProperty("Watchlist"),
-      "Compensation Event": relationValue([compensation.id]),
-      "AI Summary": richTextProperty("Emerging high performer. Focus next quarter on scale and influence."),
-      "Action Recommendations": richTextProperty("Give larger project ownership and formalize mentorship support."),
-      "Shared With Employee At": dateProperty("2026-03-08")
-    });
+    "Review Name": pageTitleProperty(`${demoSeed.people.employee.name} - Q1 2026`),
+    Employee: relationValue([employee.id]),
+    "Review Cycle": selectProperty("Q1"),
+    "Review Status": selectProperty("Shared"),
+    "Review Due Date": dateProperty("2026-03-31"),
+    Goals: relationValue(goals.map((goal) => goal.id)),
+    Achievements: relationValue(achievements.map((achievement) => achievement.id)),
+    "Self Review": richTextProperty("Built trust quickly, improved onboarding docs, and supported candidate experience visibility."),
+    "Manager Review": richTextProperty("Strong first quarter. High ownership and strong cross-functional empathy."),
+    "Peer Inputs": richTextProperty("Great collaborator and proactive communicator."),
+    "Achievements Snapshot": richTextProperty("Two validated achievements linked: onboarding documentation refresh and retention dashboard draft."),
+    "Goal Progress": { number: 0.8 },
+    Rating: { number: 4 },
+    "Promotion Recommendation": selectProperty("Watchlist"),
+    "Compensation Event": relationValue([compensation.id]),
+    "AI Summary": richTextProperty("Emerging high performer. Focus next quarter on scale and influence."),
+    "Action Recommendations": richTextProperty("Give larger project ownership and formalize mentorship support."),
+    "Shared With Employee At": dateProperty("2026-03-08")
+  });
 
   await createOrFindSafeRow(notion, registry.pulseSurveys, `${demoSeed.people.employee.name} - Monthly Pulse`, {
-      "Survey Response": pageTitleProperty(`${demoSeed.people.employee.name} - Monthly Pulse`),
-      Employee: relationValue([employee.id]),
-      "Survey Type": selectProperty("Monthly Pulse"),
-      "Submitted At": dateProperty("2026-03-07"),
-      "eNPS Style Score": { number: 9 },
-      "Energy Score": { number: 4 },
-      "Clarity Score": { number: 4 },
-      "Support Score": { number: 5 },
-      "Free Text": richTextProperty("I know what I am working on and I know who to ask when blocked."),
-      "AI Theme Summary": richTextProperty("High clarity and support. Keep reinforcing manager access and learning paths.")
-    });
+    "Survey Response": pageTitleProperty(`${demoSeed.people.employee.name} - Monthly Pulse`),
+    Employee: relationValue([employee.id]),
+    "Survey Type": selectProperty("Monthly Pulse"),
+    "Submitted At": dateProperty("2026-03-07"),
+    "eNPS Style Score": { number: 9 },
+    "Energy Score": { number: 4 },
+    "Clarity Score": { number: 4 },
+    "Support Score": { number: 5 },
+    "Free Text": richTextProperty("I know what I am working on and I know who to ask when blocked."),
+    "AI Theme Summary": richTextProperty("High clarity and support. Keep reinforcing manager access and learning paths.")
+  });
 
   await createOrFindSafeRow(notion, registry.moodLogs, `${demoSeed.people.employee.name} - Mood Today`, {
-      "Mood Entry": pageTitleProperty(`${demoSeed.people.employee.name} - Mood Today`),
-      Employee: relationValue([employee.id]),
-      Date: dateProperty("2026-03-10"),
-      Mood: selectProperty("Good"),
-      Energy: { number: 4 },
-      Clarity: { number: 4 },
-      Support: { number: 5 },
-      Note: richTextProperty("Excited about onboarding clean-up; feeling supported.")
-    });
+    "Mood Entry": pageTitleProperty(`${demoSeed.people.employee.name} - Mood Today`),
+    Employee: relationValue([employee.id]),
+    Date: dateProperty("2026-03-10"),
+    Mood: selectProperty("Good"),
+    Energy: { number: 4 },
+    Clarity: { number: 4 },
+    Support: { number: 5 },
+    Note: richTextProperty("Excited about onboarding clean-up; feeling supported.")
+  });
 
   await createOrFindSafeRow(notion, registry.moodLogs, `${demoSeed.people.manager.name} - Mood Today`, {
-      "Mood Entry": pageTitleProperty(`${demoSeed.people.manager.name} - Mood Today`),
-      Employee: relationValue([manager.id]),
-      Date: dateProperty("2026-03-10"),
-      Mood: selectProperty("Meh"),
-      Energy: { number: 3 },
-      Clarity: { number: 3 },
-      Support: { number: 3 },
-      Note: richTextProperty("Need clearer hiring priorities; juggling interviews.")
-    });
+    "Mood Entry": pageTitleProperty(`${demoSeed.people.manager.name} - Mood Today`),
+    Employee: relationValue([manager.id]),
+    Date: dateProperty("2026-03-10"),
+    Mood: selectProperty("Meh"),
+    Energy: { number: 3 },
+    Clarity: { number: 3 },
+    Support: { number: 3 },
+    Note: richTextProperty("Need clearer hiring priorities; juggling interviews.")
+  });
 
   await createOrFindSafeRow(notion, registry.moodLogs, `${demoSeed.people.buddy.name} - Mood Today`, {
-      "Mood Entry": pageTitleProperty(`${demoSeed.people.buddy.name} - Mood Today`),
-      Employee: relationValue([buddy.id]),
-      Date: dateProperty("2026-03-10"),
-      Mood: selectProperty("Great"),
-      Energy: { number: 5 },
-      Clarity: { number: 5 },
-      Support: { number: 4 },
-      Note: richTextProperty("Enjoying mentoring the new hire; bandwidth good.")
-    });
+    "Mood Entry": pageTitleProperty(`${demoSeed.people.buddy.name} - Mood Today`),
+    Employee: relationValue([buddy.id]),
+    Date: dateProperty("2026-03-10"),
+    Mood: selectProperty("Great"),
+    Energy: { number: 5 },
+    Clarity: { number: 5 },
+    Support: { number: 4 },
+    Note: richTextProperty("Enjoying mentoring the new hire; bandwidth good.")
+  });
 
   await createOrFindSafeRow(notion, registry.recognition, "Shoutout for onboarding improvements", {
-      "Recognition Title": pageTitleProperty("Shoutout for onboarding improvements"),
-      From: relationValue([manager.id]),
-      To: relationValue([employee.id]),
-      Category: selectProperty("Ownership"),
-      Message: richTextProperty("Thank you for improving the onboarding docs so quickly and making new joiners feel less lost."),
-      Date: dateProperty("2026-03-09"),
-      "Shared in Slack": checkboxProperty(true)
-    });
+    "Recognition Title": pageTitleProperty("Shoutout for onboarding improvements"),
+    From: relationValue([manager.id]),
+    To: relationValue([employee.id]),
+    Category: selectProperty("Ownership"),
+    Message: richTextProperty("Thank you for improving the onboarding docs so quickly and making new joiners feel less lost."),
+    Date: dateProperty("2026-03-09"),
+    "Shared in Slack": checkboxProperty(true)
+  });
 
   await createOrFindSafeRow(notion, registry.tasks, "Review goal feedback before appraisal closes", {
-      Task: pageTitleProperty("Review goal feedback before appraisal closes"),
-      "Task Type": selectProperty("Review"),
-      "Related Person": relationValue([employee.id]),
-      Review: relationValue([review.id]),
-      Owner: relationValue([manager.id]),
-      "Due Date": dateProperty("2026-03-25"),
-      Status: selectProperty("Not Started"),
-      Priority: selectProperty("High"),
-      "Auto-created": checkboxProperty(true),
-      "Empathy Note": richTextProperty("Do not close the cycle until the employee has explicit feedback on each major goal.")
-    });
+    Task: pageTitleProperty("Review goal feedback before appraisal closes"),
+    "Task Type": selectProperty("Review"),
+    "Related Person": relationValue([employee.id]),
+    Review: relationValue([review.id]),
+    Owner: relationValue([manager.id]),
+    "Due Date": dateProperty("2026-03-25"),
+    Status: selectProperty("Not Started"),
+    Priority: selectProperty("High"),
+    "Auto-created": checkboxProperty(true),
+    "Empathy Note": richTextProperty("Do not close the cycle until the employee has explicit feedback on each major goal.")
+  });
 
   const knowledgeTransfer = await createOrFindSafeRow(notion, registry.knowledgeTransfers, `${demoSeed.people.exiting.name} - Knowledge Transfer`, {
-      "Transfer Title": pageTitleProperty(`${demoSeed.people.exiting.name} - Knowledge Transfer`),
-      Employee: relationValue([exitingPerson.id]),
-      "Systems Owned": richTextProperty("Payroll reconciliations, vendor invoicing workflow, hiring ops tracker."),
-      "Key Contacts": richTextProperty("Finance partner, People ops lead, ATS vendor account manager."),
-      "Open Risks": richTextProperty("Payroll backup coverage still thin during AU public holidays."),
-      "Documents Linked": { url: "https://example.com/docs/knowledge-transfer" },
-      Successor: relationValue([employee.id]),
-      Status: selectProperty("In Review"),
-      "AI Summary": richTextProperty("Core operational context captured. Main risk is payroll continuity coverage.")
-    });
+    "Transfer Title": pageTitleProperty(`${demoSeed.people.exiting.name} - Knowledge Transfer`),
+    Employee: relationValue([exitingPerson.id]),
+    "Systems Owned": richTextProperty("Payroll reconciliations, vendor invoicing workflow, hiring ops tracker."),
+    "Key Contacts": richTextProperty("Finance partner, People ops lead, ATS vendor account manager."),
+    "Open Risks": richTextProperty("Payroll backup coverage still thin during AU public holidays."),
+    "Documents Linked": { url: "https://example.com/docs/knowledge-transfer" },
+    Successor: relationValue([employee.id]),
+    Status: selectProperty("In Review"),
+    "AI Summary": richTextProperty("Core operational context captured. Main risk is payroll continuity coverage.")
+  });
 
   await createOrFindSafeRow(notion, registry.offboardingCases, `${demoSeed.people.exiting.name} - Resignation`, {
-      "Case Name": pageTitleProperty(`${demoSeed.people.exiting.name} - Resignation`),
-      Employee: relationValue([exitingPerson.id]),
-      "Offboarding Type": selectProperty("Resignation"),
-      "Notice Received": dateProperty("2026-03-01"),
-      "Last Working Day": dateProperty("2026-03-28"),
-      Status: selectProperty("Knowledge Capture"),
-      "Reason Category": selectProperty("Growth"),
-      "Knowledge Transfer": relationValue([knowledgeTransfer.id]),
-      "AI Exit Summary": richTextProperty("Primary reason is career growth. Team support was strong, but scope progression felt capped."),
-      "Alumni Eligible": checkboxProperty(true)
-    });
+    "Case Name": pageTitleProperty(`${demoSeed.people.exiting.name} - Resignation`),
+    Employee: relationValue([exitingPerson.id]),
+    "Offboarding Type": selectProperty("Resignation"),
+    "Notice Received": dateProperty("2026-03-01"),
+    "Last Working Day": dateProperty("2026-03-28"),
+    Status: selectProperty("Knowledge Capture"),
+    "Reason Category": selectProperty("Growth"),
+    "Knowledge Transfer": relationValue([knowledgeTransfer.id]),
+    "AI Exit Summary": richTextProperty("Primary reason is career growth. Team support was strong, but scope progression felt capped."),
+    "Alumni Eligible": checkboxProperty(true)
+  });
 
   await createOrFindSafeRow(notion, registry.alumni, demoSeed.people.alumni.name, {
-      "Alumni Name": pageTitleProperty(demoSeed.people.alumni.name),
-      Person: relationValue([exitingPerson.id]),
-      "Exit Date": dateProperty("2026-03-28"),
-      "Last Role": richTextProperty("People Operations Specialist"),
-      "Rehire Eligible": checkboxProperty(true),
-      "Alumni Group Joined": checkboxProperty(false),
-      "Last Touchpoint": dateProperty("2026-03-01"),
-      Notes: richTextProperty("Invite to alumni network after last working day.")
-    });
+    "Alumni Name": pageTitleProperty(demoSeed.people.alumni.name),
+    Person: relationValue([exitingPerson.id]),
+    "Exit Date": dateProperty("2026-03-28"),
+    "Last Role": richTextProperty("People Operations Specialist"),
+    "Rehire Eligible": checkboxProperty(true),
+    "Alumni Group Joined": checkboxProperty(false),
+    "Last Touchpoint": dateProperty("2026-03-01"),
+    Notes: richTextProperty("Invite to alumni network after last working day.")
+  });
 
   await createOrFindSafeRow(notion, registry.automationLog, "Daily candidate update guardrail", {
-      "Run Name": pageTitleProperty("Daily candidate update guardrail"),
-      Workflow: selectProperty("Hiring Update"),
-      "Entity Type": selectProperty("Candidate"),
-      "Entity ID": richTextProperty("APP-001"),
-      "Triggered At": dateProperty("2026-03-10"),
-      Result: selectProperty("Success"),
-      Details: richTextProperty("Owner notified and candidate-safe update draft generated.")
-    });
+    "Run Name": pageTitleProperty("Daily candidate update guardrail"),
+    Workflow: selectProperty("Hiring Update"),
+    "Entity Type": selectProperty("Candidate"),
+    "Entity ID": richTextProperty("APP-001"),
+    "Triggered At": dateProperty("2026-03-10"),
+    Result: selectProperty("Success"),
+    Details: richTextProperty("Owner notified and candidate-safe update draft generated.")
+  });
 
   await createOrFindSafeRow(notion, registry.automationLog, "Monthly check-in generator", {
-      "Run Name": pageTitleProperty("Monthly check-in generator"),
-      Workflow: selectProperty("Check-in Generator"),
-      "Entity Type": selectProperty("Employee"),
-      "Entity ID": richTextProperty(employee.id),
-      "Triggered At": dateProperty("2026-03-01"),
-      Result: selectProperty("Success"),
-      Details: richTextProperty(`Created and completed linked check-in ${checkin.id}.`)
-    });
+    "Run Name": pageTitleProperty("Monthly check-in generator"),
+    Workflow: selectProperty("Check-in Generator"),
+    "Entity Type": selectProperty("Employee"),
+    "Entity ID": richTextProperty(employee.id),
+    "Triggered At": dateProperty("2026-03-01"),
+    Result: selectProperty("Success"),
+    Details: richTextProperty(`Created and completed linked check-in ${checkin.id}.`)
+  });
 
   await createOrFindSafeRow(notion, registry.automationLog, "Review evidence sync", {
-      "Run Name": pageTitleProperty("Review evidence sync"),
-      Workflow: selectProperty("Review Summary"),
-      "Entity Type": selectProperty("Review"),
-      "Entity ID": richTextProperty("Q1-REVIEW-LENA"),
-      "Triggered At": dateProperty("2026-03-08"),
-      Result: selectProperty("Success"),
-      Details: richTextProperty("Goals and validated achievements were linked into the review and appraisal workflow.")
-    });
+    "Run Name": pageTitleProperty("Review evidence sync"),
+    Workflow: selectProperty("Review Summary"),
+    "Entity Type": selectProperty("Review"),
+    "Entity ID": richTextProperty("Q1-REVIEW-LENA"),
+    "Triggered At": dateProperty("2026-03-08"),
+    Result: selectProperty("Success"),
+    Details: richTextProperty("Goals and validated achievements were linked into the review and appraisal workflow.")
+  });
 
   await seedStartupScaleDemo(notion, registry, {
     founderCeo,
