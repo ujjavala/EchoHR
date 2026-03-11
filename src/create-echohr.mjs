@@ -459,9 +459,9 @@ async function createPageHierarchy(notion, parentPageId, version) {
         root: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80",
         hiring: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
         onboarding: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1600&q=80",
-        growth: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
-        culture: "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1600&q=80",
-        offboarding: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80",
+        growth: "https://unsplash.com/photos/group-of-happy-business-people-and-company-staff-mP6zdBShhVI?auto=format&fit=crop&w=1600&q=80",
+        culture: "https://unsplash.com/photos/three-people-sitting-in-front-of-table-laughing-together-g1Kr4Ozfoac?auto=format&fit=crop&w=1600&q=80",
+        offboarding: "https://unsplash.com/photos/woman-carrying-box-of-belongings-leaving-office-u6pzdg6fWLI?auto=format&fit=crop&w=1600&q=80",
         automation: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1600&q=80"
       })
     });
