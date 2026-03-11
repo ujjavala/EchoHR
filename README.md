@@ -267,6 +267,16 @@ Runbooks & CI:
 - Ops runbooks: [docs/runbooks.md](/Users/ujja/code/personal/echohr/docs/runbooks.md)
 - Testing/CI: [docs/testing-ci-cd.md](/Users/ujja/code/personal/echohr/docs/testing-ci-cd.md), GitHub Action at `.github/workflows/ci.yml`.
 
+## Tokens and scopes
+
+- **NOTION_TOKEN**: Internal integration secret. Needs read/write to the parent page you choose; share the parent page with the integration. Scopes: `content:read`, `content:write`, `databases:read`, `databases:write`.
+- **NOTION_PARENT_PAGE_ID**: The 32-char page UUID (no dashes) of the parent where EchoHR will be created. Get it from the Notion page URL before the `?`.
+- **SLACK_BOT_TOKEN** (`xoxb-...`): Requires `chat:write` and `channels:join` (or `groups:write` if posting to private channels). Invite the bot to the channel. **SLACK_DEFAULT_CHANNEL** is the channel ID (e.g., `C06789XYZ` from the Slack URL).
+- **OPENAI_API_KEY**: Standard OpenAI key; no extra scopes. Used only for summaries in `/webhooks/meeting-notes` and `/summaries/*`. Optional.
+- **FIGMA_TOKEN** (if using Figma webhook): Personal access token with `files:read` to read comments and metadata.
+- **EMAIL_WEBHOOK** (optional): Any HTTP endpoint that accepts POST JSON for email fallbacks.
+- Branding: **LOGO_URL** (public image URL), **HERO_VIDEO_URL** (public video/embed URL).
+
 ## Output
 
 After a successful run, the script writes local IDs and URLs to:
