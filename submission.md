@@ -51,8 +51,8 @@ flowchart LR
     end
 
     subgraph Onboarding
-      O -->|status=Accepted\n/webhooks/notion| J[Onboarding Journeys]
-      J --> CHK[Monthly Check-ins (6)]
+      O -->|status=Accepted /webhooks/notion| J[Onboarding Journeys]
+      J --> CHK[Monthly Check-ins x6]
       J --> T
     end
 
