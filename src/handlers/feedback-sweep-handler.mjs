@@ -1,6 +1,8 @@
 import { sendSlackMessage } from "../lib/slack.mjs";
+import { isFeatureEnabled } from "../lib/feature-flags.mjs";
 
 export async function feedbackSweep(notionClient, state) {
+  if (!isFeatureEnabled("feedback_sweep", true)) return { ok: true, skipped: true, reason: "feedback_sweep disabled" };
   const interviewsDs = state.databases?.interviews?.dataSourceId;
   if (!interviewsDs) return { ok: false, skipped: true, reason: "Missing Interviews data source" };
 

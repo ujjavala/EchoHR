@@ -1,0 +1,7 @@
+{
+  "slack_notifications": true,
+  "ai_summaries": true,
+  "auto_candidate_applications": true,
+  "auto_onboarding_from_offer": true,
+  "feedback_sweep": true
+}

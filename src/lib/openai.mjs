@@ -1,3 +1,5 @@
+import { isFeatureEnabled } from "./feature-flags.mjs";
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 
@@ -18,6 +20,14 @@ function summaryPrompt(kind, payload) {
 }
 
 export async function generateOpenAISummary(kind, payload) {
+  if (!isFeatureEnabled("ai_summaries", true)) {
+    return {
+      provider: "disabled",
+      kind,
+      summary: `AI summaries disabled by feature flag.`,
+      input_echo: payload
+    };
+  }
   if (!OPENAI_API_KEY) {
     return {
       provider: "fallback",

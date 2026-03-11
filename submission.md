@@ -8,7 +8,6 @@ EchoHR: a fully Notion-native employee lifecycle system (candidates → offers �
 
 ## Show us the code
 Repo: https://github.com/your-org/echohr  
-Workspace path for this submission: `/Users/ujja/code/personal/echohr`
 
 ## How I Used Notion MCP
 - Notion MCP (hosted): primary CRUD + schema for all lifecycle data sources; one-click provisioning (`npm run demo`) and ongoing agent ops (update statuses, log check-ins, post summaries).
@@ -16,6 +15,7 @@ Workspace path for this submission: `/Users/ujja/code/personal/echohr`
 - Figma MCP: convert “Ready for Review” comments into Notion review tasks and Slack notifications for design → PM/Eng handoff.
 - Calendar MCP (pattern): schedule interview loops or post-offer check-ins when agents call the calendar MCP after creating tasks.
 - OpenAI MCP (via automation server): `/webhooks/meeting-notes` turns raw interview/review/exit notes into AI summaries, candidate-safe feedback, and manager actions written back to Notion.
+- Admin controls: feature flags (`config/feature-flags.json` or POST `/ops/feature-flags`) to toggle Slack notifications, AI summaries, auto candidate→application, auto onboarding-from-offer, and feedback sweeps.
 - Drove Notion’s `data_source` APIs through MCP: create pages, data sources, relations, and rollups; seed demo data; persist install state for idempotent re-runs.
 - Provisioned 20+ interconnected data sources (People, Roles, Candidates, Applications, Interviews, Offers, Journeys, Check-ins, Goals, Achievements, Reviews, Compensation, Tasks, Automation Log, etc.) with dual relations and SLA rollups for “no-ghosting” guardrails.
 - Added MCP-friendly automation playbooks for Slack/email/calendar + OpenAI summarization hooks (feedback, reviews, exit notes).

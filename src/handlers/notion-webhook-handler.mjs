@@ -1,6 +1,7 @@
 import { pageTitleProperty, selectProperty, dateProperty } from "../lib/notion.mjs";
 import { pickTitle } from "../lib/feedback.mjs";
 import { sendSlackMessage } from "../lib/slack.mjs";
+import { isFeatureEnabled } from "../lib/feature-flags.mjs";
 
 async function createApplicationFromCandidate(notionClient, state, candidatePageId) {
   const candidateDs = state.databases?.candidates?.dataSourceId;
@@ -120,6 +121,10 @@ export async function processNotionWebhook(body, notionClient, state) {
     }
 
     if (dsId === state.databases?.candidates?.dataSourceId && event?.type === "page_created") {
+      if (!isFeatureEnabled("auto_candidate_applications", true)) {
+        results.push({ ok: true, skipped: true, reason: "auto_candidate_applications disabled" });
+        continue;
+      }
       const res = await createApplicationFromCandidate(notionClient, state, pageId);
       results.push(res);
       await sendSlackMessage({
@@ -130,6 +135,10 @@ export async function processNotionWebhook(body, notionClient, state) {
     }
 
     if (dsId === state.databases?.offers?.dataSourceId) {
+      if (!isFeatureEnabled("auto_onboarding_from_offer", true)) {
+        results.push({ ok: true, skipped: true, reason: "auto_onboarding_from_offer disabled" });
+        continue;
+      }
       const offer = await notionClient.request(`/v1/pages/${pageId}`);
       const status = offer.properties?.["Offer Status"]?.select?.name || "";
       if (status === "Accepted") {

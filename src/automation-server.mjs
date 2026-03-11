@@ -6,6 +6,7 @@ import { handleFigmaWebhook } from "./handlers/figma-handler.mjs";
 import { handleMeetingNotesWebhook } from "./handlers/meeting-notes-handler.mjs";
 import { feedbackSweep } from "./handlers/feedback-sweep-handler.mjs";
 import { processNotionWebhook } from "./handlers/notion-webhook-handler.mjs";
+import { loadFeatureFlags, getFeatureFlags, isFeatureEnabled, setFeatureFlags } from "./lib/feature-flags.mjs";
 
 loadDotEnv();
 
@@ -16,6 +17,9 @@ const NOTION_VERSION = process.env.NOTION_VERSION || "2025-09-03";
 
 let cachedInstallState = null;
 let cachedNotionClient = null;
+
+// Preload feature flags
+await loadFeatureFlags().catch(() => null);
 
 function notion() {
   if (!NOTION_TOKEN) {
@@ -67,7 +71,8 @@ const server = createServer(async (request, response) => {
         service: "echohr-automation-server",
         port: PORT,
         openaiConfigured: Boolean(process.env.OPENAI_API_KEY),
-        slackConfigured: Boolean(process.env.SLACK_BOT_TOKEN)
+        slackConfigured: Boolean(process.env.SLACK_BOT_TOKEN),
+        featureFlags: getFeatureFlags()
       });
     }
 
@@ -89,6 +94,9 @@ const server = createServer(async (request, response) => {
 
     if (request.method === "POST" && url.pathname === "/webhooks/notion") {
       const body = await readBody(request);
+      if (!isFeatureEnabled("auto_candidate_applications", true) && !isFeatureEnabled("auto_onboarding_from_offer", true)) {
+        return json(response, 200, { ok: true, skipped: true, reason: "Automation disabled by feature flags" });
+      }
       const state = await loadInstallState();
       if (!state) return json(response, 200, { ok: false, reason: "No install state" });
       const results = await processNotionWebhook(body, notion(), state);
@@ -110,6 +118,9 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/ops/feedback-sweep") {
+      if (!isFeatureEnabled("feedback_sweep", true)) {
+        return json(response, 200, { ok: true, skipped: true, reason: "Feedback sweep disabled by feature flag" });
+      }
       const state = await loadInstallState();
       if (!state) return json(response, 200, { ok: false, reason: "No install state" });
       const result = await feedbackSweep(notion(), state);
@@ -127,6 +138,13 @@ const server = createServer(async (request, response) => {
         route: "slack",
         received: body
       });
+    }
+
+    // Runtime feature flag override (admin/testing): POST /ops/feature-flags {flags:{}}
+    if (request.method === "POST" && url.pathname === "/ops/feature-flags") {
+      const body = await readBody(request);
+      setFeatureFlags(body.flags || {});
+      return json(response, 200, { ok: true, featureFlags: getFeatureFlags() });
     }
 
     return json(response, 404, {

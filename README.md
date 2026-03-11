@@ -50,6 +50,7 @@ Optional:
 - `OPENAI_MODEL`
 - `SLACK_BOT_TOKEN`
 - `SLACK_DEFAULT_CHANNEL`
+- `FEATURE_FLAGS_PATH` (defaults to `config/feature-flags.json`)
 - `PORT` defaults to `8787`
 
 ## Run
@@ -110,6 +111,7 @@ Webhook + automation endpoints (MCP-friendly):
 - `POST /slack/notify` — simple Slack DM/channel helper
 - `POST /summaries/interview|review|exit` — OpenAI summaries ready to write back to Notion
 - `POST /ops/feedback-sweep` — finds interviews completed >7 days with no feedback and pings Slack (and optional EMAIL_WEBHOOK)
+- `POST /ops/feature-flags` — override feature flags at runtime `{ "flags": { "slack_notifications": false, ... } }`
 - `GET /health` — status
 
 Make/Zapier/Figma glue:
@@ -203,6 +205,11 @@ Figma flows:
 - Local webhook: `POST /webhooks/figma` with a Figma comment payload containing “Ready for Review” → Notion Review task (due tomorrow) + Slack notify (if configured).
 - Make scenario: `automations/make/figma-status-to-notion.json` — when a Figma frame hits “Ready for Review,” create/update a Notion Task, attach to a Check-in, and post to Slack with a thumbnail.
 
+Feature flags (admin controls):
+- File: `config/feature-flags.json` (copy from example). Flags: `slack_notifications`, `ai_summaries`, `auto_candidate_applications`, `auto_onboarding_from_offer`, `feedback_sweep`.
+- Runtime override: `curl -X POST http://127.0.0.1:8787/ops/feature-flags -H "Content-Type: application/json" -d '{"flags":{"slack_notifications":false}}'`
+- `/health` reports current flags.
+
 ## MCP client setup
 
 Notion hosts an MCP server. Point your MCP-capable client at it:
@@ -232,6 +239,10 @@ Multi-agent MCP (optional):
 VS Code MCP convenience:
 
 - `.vscode/settings.json` points MCP-capable VS Code extensions to `./mcp.json`.
+
+Runbooks & CI:
+- Ops runbooks: [docs/runbooks.md](/Users/ujja/code/personal/echohr/docs/runbooks.md)
+- Testing/CI: [docs/testing-ci-cd.md](/Users/ujja/code/personal/echohr/docs/testing-ci-cd.md), GitHub Action at `.github/workflows/ci.yml`.
 
 ## Output
 

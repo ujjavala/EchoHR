@@ -1,7 +1,12 @@
+import { isFeatureEnabled } from "./feature-flags.mjs";
+
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || "";
 const SLACK_DEFAULT_CHANNEL = process.env.SLACK_DEFAULT_CHANNEL || "";
 
 export async function sendSlackMessage({ text, channel = SLACK_DEFAULT_CHANNEL }) {
+  if (!isFeatureEnabled("slack_notifications", true)) {
+    return { ok: true, skipped: true, reason: "Slack notifications disabled by feature flag", text, channel };
+  }
   if (!SLACK_BOT_TOKEN || !channel) {
     return {
       provider: "fallback",
