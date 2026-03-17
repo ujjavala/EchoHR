@@ -36,20 +36,32 @@ function loadExistingInstallState() {
   return loadJsonIfExists(".echohr-install-state.json");
 }
 
-function getNextInstallVersion(existingInstall, forceNew, dryRun) {
+function getNextInstallVersion(existingInstall, highestKnownVersion = 0, forceNew = false, dryRun = false) {
   if (dryRun) {
-    return existingInstall?.version || 1;
+    return existingInstall?.version || Math.max(1, highestKnownVersion || 1);
   }
 
-  if (!existingInstall) {
-    return 1;
+  if (existingInstall) {
+    return forceNew ? (existingInstall.version || 1) + 1 : (existingInstall.version || 1);
   }
 
-  return forceNew ? (existingInstall.version || 1) + 1 : (existingInstall.version || 1);
+  // No install state; if we discover prior installs in Notion, continue from them; otherwise start fresh at 1.
+  const base = highestKnownVersion || 0;
+  return base > 0 ? base + 1 : 1;
 }
 
 function rootTitleForVersion(version, isLatest = true) {
   return isLatest ? `EchoHR HQ v${version} (latest)` : `EchoHR HQ v${version}`;
+}
+
+function pageTitleFromPage(page) {
+  const titleProp = page.properties?.title?.title || [];
+  return titleProp.map((t) => t.plain_text || "").join("");
+}
+
+function parseVersionFromTitle(title) {
+  const match = title?.match(/EchoHR HQ v(\d+)/i);
+  return match ? Number(match[1]) : null;
 }
 
 function relationProperty(targetDataSourceId, syncedName) {
@@ -77,7 +89,53 @@ function rollupProperty(relationPropertyId, relationPropertyName, rollupProperty
   };
 }
 
-function topLevelIntroBlocks() {
+async function resolveLogoUrl() {
+  const defaultLogo = "https://raw.githubusercontent.com/ujjavala/EchoHR/main/echohr-logo.png";
+  const fallbackUnsplash = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80";
+  const candidates = [
+    process.env.LOGO_URL,
+    process.env.LOCAL_LOGO_URL,
+    defaultLogo,
+    fallbackUnsplash
+  ].filter(Boolean);
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { method: "HEAD" });
+      if (res.ok) {
+        return url;
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return fallbackUnsplash;
+}
+
+async function findHighestKnownVersion(notion, parentPageId) {
+  try {
+    const search = await notion.request("/v1/search", {
+      method: "POST",
+      body: {
+        query: "EchoHR HQ v",
+        filter: { property: "object", value: "page" },
+        sort: { direction: "descending", timestamp: "last_edited_time" }
+      }
+    });
+
+    const versions = (search.results || [])
+      .filter((page) => page.parent?.type === "page_id" && page.parent.page_id === parentPageId)
+      .map((page) => parseVersionFromTitle(pageTitleFromPage(page)))
+      .filter((v) => Number.isFinite(v));
+
+    return versions.length ? Math.max(...versions) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function topLevelIntroBlocks() {
   const blocks = [
     heading(1, "EchoHR"),
     paragraph("EchoHR is a Notion-native employee lifecycle system built around clarity, empathy, and speed."),
@@ -100,19 +158,6 @@ function topLevelIntroBlocks() {
       object: "block",
       type: "embed",
       embed: { url: process.env.CHARTS_EMBED_URL }
-    });
-  }
-
-  const defaultLogo = "https://raw.githubusercontent.com/ujjavala/EchoHR/main/echohr-logo.png";
-  const logoUrl = process.env.LOGO_URL || process.env.LOCAL_LOGO_URL || defaultLogo;
-  if (logoUrl) {
-    blocks.unshift({
-      object: "block",
-      type: "image",
-      image: {
-        type: "external",
-        external: { url: logoUrl }
-      }
     });
   }
 
@@ -453,13 +498,15 @@ async function createOrFindSafeRow(notion, entry, title, properties, children = 
 
 async function createPageHierarchy(notion, parentPageId, version) {
   const rootTitle = rootTitleForVersion(version, true);
+  const logoUrl = await resolveLogoUrl();
   const root = await notion.createPage({
     parent: {
       type: "page_id",
       page_id: parentPageId
     },
     title: rootTitle,
-    children: topLevelIntroBlocks()
+    icon: logoUrl ? { type: "external", external: { url: logoUrl } } : undefined,
+    children: await topLevelIntroBlocks()
   });
 
   const sectionPages = {};
@@ -1387,9 +1434,6 @@ async function seedStartupScaleDemo(notion, registry, anchors) {
 async function main() {
   loadDotEnv();
   const args = parseArgs(process.argv.slice(2));
-  const existingInstall = !args.dryRun ? loadExistingInstallState() : null;
-  const version = getNextInstallVersion(existingInstall, args.forceNew, args.dryRun);
-
   const token = process.env.NOTION_TOKEN || loadNotionTokenFromOAuthSession() || requireEnv("NOTION_TOKEN");
   const parentPageId = requireEnv("NOTION_PARENT_PAGE_ID");
   const notion = new NotionClient({
@@ -1397,6 +1441,9 @@ async function main() {
     version: process.env.NOTION_VERSION || "2025-09-03",
     dryRun: args.dryRun
   });
+  const existingInstall = !args.dryRun ? loadExistingInstallState() : null;
+  const highestKnownVersion = existingInstall ? existingInstall.version || 0 : await findHighestKnownVersion(notion, parentPageId);
+  const version = getNextInstallVersion(existingInstall, highestKnownVersion, args.forceNew, args.dryRun);
 
   if (!args.dryRun && args.forceNew && existingInstall?.root?.id && existingInstall?.version) {
     await notion.updatePageTitle(existingInstall.root.id, rootTitleForVersion(existingInstall.version, false));

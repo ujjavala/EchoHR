@@ -12,9 +12,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - name: Install
-        run: npm ci
+          cache: 'npm'
+      - name: Clean npm cache and install (resilient)
+        run: |
+          npm set progress=false
+          npm config set registry https://registry.npmjs.org
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 1000
+          npm config set fetch-retry-maxtimeout 2000
+          npm cache clean --force
+          npm ci --ignore-scripts --registry=https://registry.npmjs.org --prefer-online
       - name: Static checks
         run: npm run check
       - name: Contract tests
