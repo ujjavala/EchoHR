@@ -108,6 +108,19 @@ export class NotionClient {
       };
     }
 
+    const iconPayload = (() => {
+      if (!icon) return undefined;
+      // If caller supplies a fully-formed Notion icon, pass through.
+      if (icon.type === "external" || icon.type === "emoji" || icon.type === "file" || icon.type === "custom_emoji") {
+        return icon;
+      }
+      // If caller passed a string, treat as emoji.
+      if (typeof icon === "string") {
+        return { type: "emoji", emoji: icon };
+      }
+      return undefined;
+    })();
+
     return this.request("/v1/pages", {
       method: "POST",
       body: {
@@ -115,7 +128,7 @@ export class NotionClient {
         properties: {
           title: pageTitleProperty(title)
         },
-        ...(icon ? { icon: { type: "emoji", emoji: icon } } : {}),
+        ...(iconPayload ? { icon: iconPayload } : {}),
         children
       }
     });
