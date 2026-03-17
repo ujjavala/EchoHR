@@ -1,5 +1,6 @@
 import { STATUS_FIELDS_BY_DB } from "./notion-webhook-handler.mjs";
-import { sendSlackMessage } from "../lib/slack.mjs";
+import { sendSlackAsync } from "../lib/slack.mjs";
+import { syncToPostgres } from "../db/postgres-sync.mjs";
 
 function statusPieces(page, fields) {
   const props = page.properties || {};
@@ -41,16 +42,22 @@ export async function statusSweep(notionClient, state, windowMinutes = 15) {
         const props = page.properties || {};
         const titleKey = Object.keys(props).find((p) => props[p].type === "title");
         const title = titleKey ? (props[titleKey].title || []).map((t) => t.plain_text).join("") : page.id;
-        messages.push(`Status update (${key}): ${title} — ${pieces.join(" · ")}`);
+        const msg = `Status update (${key}): ${title} — ${pieces.join(" · ")}`;
+        messages.push(msg);
+        await syncToPostgres({
+          pageId: page.id,
+          dbKey: key,
+          title,
+          updatedAt: page.last_edited_time,
+          payload: { status: msg }
+        }).catch(() => null);
       }
     }
   }
 
   if (messages.length) {
-    await sendSlackMessage({
-      text: messages.join("\n"),
-      channel: process.env.SLACK_DEFAULT_CHANNEL
-    }).catch(() => null);
+    const batched = messages.join("\n");
+    await sendSlackAsync({ text: batched, channel: process.env.SLACK_DEFAULT_CHANNEL }).catch(() => null);
   }
 
   return { ok: true, sent: messages.length, since };

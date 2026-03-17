@@ -1,4 +1,5 @@
 import { writeFile } from "node:fs/promises";
+import { inc } from "../core/metrics.mjs";
 
 function toRichText(text) {
   return [
@@ -81,6 +82,13 @@ export class NotionClient {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        inc("notion_429");
+        const retryAfter = Number(response.headers.get("retry-after") || 1);
+        await new Promise((r) => setTimeout(r, retryAfter * 1000));
+        // simple retry once after backoff
+        return this.request(path, { method, body });
+      }
       const errorText = await response.text();
       throw new Error(`${method} ${path} failed: ${response.status} ${errorText}`);
     }

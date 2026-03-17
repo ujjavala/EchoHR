@@ -4,10 +4,45 @@
 EchoHR: a fully Notion-native employee lifecycle system (candidates → offers → onboarding → growth → performance → compensation → offboarding → alumni) provisioned automatically via MCP. It spins up versioned hubs, 20+ linked data sources, dual relations and rollups, AI-ready fields, templates, automation playbooks, and a startup-scale demo dataset so teams can demo and iterate instantly—zero ghosting for candidates and employees.
 
 ## Video Demo
-<!-- TODO: Add Loom link showing one-click provisioning, pipelines, dashboards, and Slack/AI automations running. -->
+https://youtu.be/CncRZi-xYN8
 
 ## Show us the code
 Repo: https://github.com/your-org/echohr  
+Screenshots: add/replace `docs/screenshots/dashboard.png` to give reviewers an instant view.
+
+```mermaid
+%%{init: {'theme':'neutral', 'themeVariables': { 'fontSize': '20px', 'fontFamily': 'Inter, Segoe UI, sans-serif', 'primaryColor': '#0a0a0a', 'primaryTextColor':'#0a0a0a', 'primaryBorderColor':'#0a0a0a', 'lineColor':'#0a0a0a', 'tertiaryColor':'#eef2ff', 'strokeWidth': '2px'}}}%%
+flowchart LR
+    C([Candidates]) ==> A([Applications]) ==> I([Interviews]) ==> O([Offers]) ==> J([Onboarding]) ==> CHK([Check-ins]) ==> G([Goals]) ==> ACH([Achievements]) ==> PR([Performance Reviews]) ==> CE([Comp Events]) ==> Off([Offboarding]) ==> KT([Knowledge Transfer]) ==> Alumni([Alumni])
+    I -. notes .-> Fbk[[AI Feedback]]
+    PR -. notes .-> Fbk
+    Fbk -. summaries .-> I
+    Fbk -. summaries .-> PR
+    Pulse([Pulse Surveys]) --> People((People))
+    Recog([Recognition]) --> People
+    Mood([Mood of Day]) --> People
+    People --> CHK
+    People --> PR
+    People --> Off
+    People --> Alumni
+    C -. SLA task .-> T([Tasks])
+    I -. overdue check .-> Slack([Slack])
+    T -.-> Slack
+    Figma([Figma]) -. Ready for Review .-> T
+    Calendar([Calendar]) -. schedule .-> CHK
+    Slack -. MCP .-> Automation([Automation Server / MCP])
+    OpenAI([OpenAI]) -. summaries .-> Fbk
+    classDef hiring fill:#ffb347,stroke:#7a3d00,color:#1a0c00,font-weight:bold;
+    classDef onboard fill:#9cc2ff,stroke:#003f99,color:#00162e,font-weight:bold;
+    classDef growth fill:#9ff0b5,stroke:#0f7a33,color:#0a2a16,font-weight:bold;
+    classDef exit fill:#ff9b9b,stroke:#8b0c0c,color:#3d0000,font-weight:bold;
+    classDef infra fill:#e8ebf0,stroke:#1f2937,color:#0f172a,font-weight:bold;
+    class C,A,I hiring;
+    class O,J,CHK onboard;
+    class G,ACH,PR,CE growth;
+    class Off,KT,Alumni exit;
+    class People,T,Slack,Figma,Calendar,Automation,OpenAI,Fbk,Pulse,Recog,Mood infra;
+```
 
 ## How I Used Notion MCP
 - Notion MCP (hosted): primary CRUD + schema for all lifecycle data sources; one-click provisioning (`npm run demo`) and ongoing agent ops (update statuses, log check-ins, post summaries).
@@ -34,6 +69,11 @@ Repo: https://github.com/your-org/echohr
 - Figma/Feedback automation: `/webhooks/figma` turns “Ready for Review” comments into Notion Review tasks + Slack; `/webhooks/meeting-notes` posts AI feedback into interviews/reviews; `/ops/feedback-sweep` reminds on >7-day stale feedback.
 - Lifecycle status pings: `/webhooks/notion` (page_updated) and `/ops/status-sweep` post Slack updates when lifecycle statuses change (candidates, offers, onboarding, tasks, reviews, offboarding).
 - MCP-only polling: `npm run mcp-status-watch` queries recent edits (no webhooks) and posts Slack status updates.
+- High-volume mode: `HIGH_VOLUME=true` with `NOTION_RATE_DELAY_MS`/`NOTION_RATE_CONCURRENCY` to pace Notion calls; optional Postgres mirror (`POSTGRES_URL`/`DATABASE_URL`) stores status events for analytics and MCP querying.
+- Queue/worker: status Slack pings can enqueue to Postgres-backed jobs; run `npm run worker` for durable delivery; `/ready` reports queue depth.
+- Pipelines-ready: when Notion Pipelines is available, point pipeline actions to `/webhooks/notion`, `/webhooks/meeting-notes`, `/ops/feedback-sweep` (see `docs/pipelines.md`).
+- Observability/Security: JSON logging with request_id, `/metrics` endpoint, optional Notion/Slack/Figma webhook HMAC/signature validation, RBAC flag gate, contract test (`npm run test:contracts`).
+- Data workflows: Postgres mirror (GDPR helpers) with export/delete scripts (`npm run export-events`, `node scripts/delete-event.mjs <page_id>`).
 
 ## Limitations (current Notion constraints)
 - Notion API/MCP cannot create or edit database views; view setup (boards, timelines, galleries, charts) must be done manually in the UI. We auto-create “Setup Views” and “View Setup Checklist” pages to guide the clicks. If desired, I can hop into your workspace and flip the views for you; the platform simply doesn’t expose view configuration via API/MCP yet.

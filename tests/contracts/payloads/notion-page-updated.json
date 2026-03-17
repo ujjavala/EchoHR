@@ -1,0 +1,10 @@
+{
+  "event": {
+    "type": "page_updated",
+    "data": {
+      "id": "dummy-page-id",
+      "parent": { "data_source_id": "dummy-ds" },
+      "last_edited_time": "2026-03-17T00:00:00Z"
+    }
+  }
+}

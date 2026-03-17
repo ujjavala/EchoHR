@@ -29,6 +29,7 @@ It creates an `EchoHR` workspace structure inside Notion with:
 - a local automation server for OpenAI and Slack glue
 - Make and Zapier starter scenario manifests
 - versioned installs (`EchoHR HQ vN (latest)`) with automatic unarchive-and-retitle of older versions on `--force-new`
+- Screenshots: see `docs/screenshots/dashboard.png` (replace with your own to show dashboards quickly). Demo video: https://youtu.be/CncRZi-xYN8
 
 ## What you need
 
@@ -50,10 +51,19 @@ Optional:
 - `OPENAI_MODEL`
 - `SLACK_BOT_TOKEN`
 - `SLACK_DEFAULT_CHANNEL`
-- `LOGO_URL` (optional external image for the root icon/top hero block)
+- `LOGO_URL` (optional external image for the root icon/top hero block). Default: `https://raw.githubusercontent.com/ujjavala/EchoHR/main/echohr-logo.png`.
 - `HERO_VIDEO_URL` (optional external video/embed shown on each section page)
+- `CHARTS_EMBED_URL` (optional public chart/dashboard embed shown on the root page)
 - `FEATURE_FLAGS_PATH` (defaults to `config/feature-flags.json`)
 - `PORT` defaults to `8787`
+- `HIGH_VOLUME` (set `true` to wrap Notion calls with a rate limiter)
+- `NOTION_RATE_DELAY_MS` (default 400ms) and `NOTION_RATE_CONCURRENCY` (default 1) for high-volume mode
+- `POSTGRES_URL` or `DATABASE_URL` (optional mirror for analytics/events)
+- `NOTION_WEBHOOK_SECRET` (optional HMAC for /webhooks/notion)
+- `SLACK_SIGNING_SECRET` (optional signature validation for /webhooks/slack)
+
+Why Postgres as mirror
+- MCP-friendly (use any Postgres MCP server), fast rollups/materialized views, predictable tuning, and no vendor API limits. Keep Notion for UX; Postgres for analytics/event spine.
 
 ## Run
 
@@ -91,11 +101,37 @@ Run the local automation server:
 npm run automation-server
 ```
 
+Initialize Postgres mirror tables (if using Postgres):
+```bash
+POSTGRES_URL=... npm run migrate
+```
+
+Run the background worker (durable Slack jobs when Postgres configured):
+```bash
+npm run worker
+```
+
+Export mirrored events (PII aware):
+```bash
+npm run export-events
+```
+
+Delete a mirrored event (GDPR/CCPA helper):
+```bash
+node scripts/delete-event.mjs <page_id>
+```
+
 MCP-style polling (no webhooks):  
 ```bash
 STATUS_WATCH_WINDOW_MIN=15 npm run mcp-status-watch
 ```
 Reads `.echohr-install-state.json`, queries recent edits, and posts Slack status updates without Notion webhooks.
+
+High-volume mode (rate-safe):
+- Set `HIGH_VOLUME=true` (optionally tune `NOTION_RATE_DELAY_MS`, `NOTION_RATE_CONCURRENCY`) to pace Notion API calls during bulk updates.
+
+Postgres mirror (optional):
+- Set `POSTGRES_URL` (or `DATABASE_URL`); status updates and sweeps upsert into `echohr_events` for analytics/offline rollups.
 
 ## Docker (one-shot demo + automation server)
 
@@ -105,7 +141,9 @@ docker compose up --build
 
 What it does:
 - Installs deps
+- Runs `npm run migrate` (if Postgres is configured)
 - Runs `npm run demo -- --seed-demo --force-new` to provision Notion
+- Starts `npm run worker` in background
 - Starts `npm run automation-server` on port 8787
 
 Set env vars (NOTION_TOKEN, NOTION_PARENT_PAGE_ID, SLACK_BOT_TOKEN, etc.) in your shell or a `.env` file for docker compose.
@@ -134,6 +172,7 @@ Webhook + automation endpoints (MCP-friendly):
 - `POST /ops/feedback-sweep` — finds interviews completed >7 days with no feedback and pings Slack (and optional EMAIL_WEBHOOK)
 - `POST /ops/feature-flags` — override feature flags at runtime `{ "flags": { "slack_notifications": false, ... } }`
 - `POST /ops/status-sweep` — scan recent edits (last 15m) across lifecycle DBs and post Slack status updates
+- `GET /ready` — readiness (checks Postgres if configured, queue depth)
 - `GET /health` — status
 
 Make/Zapier/Figma glue:
@@ -233,6 +272,9 @@ Feature flags (admin controls):
 - Runtime override: `curl -X POST http://127.0.0.1:8787/ops/feature-flags -H "Content-Type: application/json" -d '{"flags":{"slack_notifications":false}}'`
 - `/health` reports current flags.
 
+Notion Pipelines (beta-ready):
+- EchoHR webhook endpoints are pipeline-friendly. Once you have Pipelines access, wire events to: `/webhooks/notion` (page_created/page_updated), `/webhooks/meeting-notes`, `/ops/feedback-sweep`. See `docs/pipelines.md` for suggested steps.
+
 ## MCP client setup
 
 Notion hosts an MCP server. Point your MCP-capable client at it:
@@ -244,7 +286,8 @@ Notion hosts an MCP server. Point your MCP-capable client at it:
     "NotionSseFallback": { "type": "sse", "url": "https://mcp.notion.com/sse" },
     "Figma": { "type": "http", "url": "https://mcp.figma.com/mcp" },
     "Slack": { "type": "http", "url": "https://mcp.slack.com/mcp" },
-    "Calendar": { "type": "http", "url": "https://mcp.calendar.com/mcp" }
+    "Calendar": { "type": "http", "url": "https://mcp.calendar.com/mcp" },
+    "Postgres": { "type": "http", "url": "http://localhost:4000" } // example Postgres MCP server for mirrored events
   }
 }
 ```
@@ -252,6 +295,7 @@ Notion hosts an MCP server. Point your MCP-capable client at it:
 - Example configs: `mcp/mcp-client-config.example.json` and root-level `mcp.json` (most MCP clients auto-read it).
 - Authenticate with your Notion account when prompted by the client (Cursor, Claude Desktop, ChatGPT MCP, etc.).
 - For STDIO-only clients, wrap the hosted server with `mcp-remote`: `npx -y mcp-remote https://mcp.notion.com/mcp`.
+- Expose the Postgres mirror through any Postgres MCP server for analytics/joins alongside Notion MCP.
 
 Multi-agent MCP (optional):
 
@@ -265,7 +309,7 @@ VS Code MCP convenience:
 
 Runbooks & CI:
 - Ops runbooks: [docs/runbooks.md](/Users/ujja/code/personal/echohr/docs/runbooks.md)
-- Testing/CI: [docs/testing-ci-cd.md](/Users/ujja/code/personal/echohr/docs/testing-ci-cd.md), GitHub Action at `.github/workflows/ci.yml`.
+- Testing/CI: [docs/testing-ci-cd.md](/Users/ujja/code/personal/echohr/docs/testing-ci-cd.md), GitHub Action at `.github/workflows/ci.yml` (runs `npm run check` + `npm run test:contracts`).
 
 ## Tokens and scopes
 
@@ -273,9 +317,20 @@ Runbooks & CI:
 - **NOTION_PARENT_PAGE_ID**: The 32-char page UUID (no dashes) of the parent where EchoHR will be created. Get it from the Notion page URL before the `?`.
 - **SLACK_BOT_TOKEN** (`xoxb-...`): Requires `chat:write` and `channels:join` (or `groups:write` if posting to private channels). Invite the bot to the channel. **SLACK_DEFAULT_CHANNEL** is the channel ID (e.g., `C06789XYZ` from the Slack URL).
 - **OPENAI_API_KEY**: Standard OpenAI key; no extra scopes. Used only for summaries in `/webhooks/meeting-notes` and `/summaries/*`. Optional.
-- **FIGMA_TOKEN** (if using Figma webhook): Personal access token with `files:read` to read comments and metadata.
+- **FIGMA_TOKEN** (if using Figma webhook): Personal access token with `files:read` to read comments and metadata. Optional `FIGMA_WEBHOOK_SECRET` to validate callbacks.
 - **EMAIL_WEBHOOK** (optional): Any HTTP endpoint that accepts POST JSON for email fallbacks.
 - Branding: **LOGO_URL** (public image URL), **HERO_VIDEO_URL** (public video/embed URL).
+- **POSTGRES_URL** / **DATABASE_URL** (optional): Postgres connection string for mirroring status/events into `echohr_events` (better rollups + MCP-ready via Postgres MCP server).
+
+Security
+- Optional HMAC for Notion webhooks: set `NOTION_WEBHOOK_SECRET` and send header `x-echohr-signature` = HMAC SHA256 of raw body.
+- Optional Slack signature validation: set `SLACK_SIGNING_SECRET`; Slack-signed requests will be verified.
+- Optional Figma signature: set `FIGMA_WEBHOOK_SECRET` to validate Figma callbacks.
+- RBAC flag gate: pass `context.role` in Notion webhook payloads; non-admin roles must allow the feature flag.
+
+Observability
+- JSON logs with `requestId`; `/metrics` exposes counters (slack_sent, slack_failed, notion_429, webhook_latency_ms).
+- `/ready` checks Postgres + queue depth; `/health` reports OpenAI/Slack config.
 
 ## Output
 
@@ -295,41 +350,34 @@ Automation assets live in:
 Lifecycle automation intent:
 
 ```mermaid
+%%{init: {'theme':'neutral', 'themeVariables': { 'fontSize': '22px', 'fontFamily': 'Inter, Segoe UI, sans-serif', 'primaryColor': '#0a0a0a', 'primaryTextColor':'#0a0a0a', 'primaryBorderColor':'#0a0a0a', 'lineColor':'#0a0a0a', 'tertiaryColor':'#eef2ff', 'strokeWidth': '3px', 'edgeLabelBackground':'#eef2ff'}}}%%
 flowchart LR
-    %% Lifecycle ribbon (left -> right)
-    C[Candidates] --> A[Applications] --> I[Interviews] --> O[Offers] --> J[Onboarding] --> CHK[Check-ins] --> G[Goals] --> ACH[Achievements] --> PR[Performance Reviews] --> CE[Comp Events] --> Off[Offboarding] --> KT[Knowledge Transfer] --> Alumni[Alumni]
-
-    %% Feedback/AI thread
-    I -. notes .-> Fbk[AI Feedback]
+    C([Candidates]) ==> A([Applications]) ==> I([Interviews]) ==> O([Offers]) ==> J([Onboarding]) ==> CHK([Check-ins]) ==> G([Goals]) ==> ACH([Achievements]) ==> PR([Performance Reviews]) ==> CE([Comp Events]) ==> Off([Offboarding]) ==> KT([Knowledge Transfer]) ==> Alumni([Alumni])
+    I -. notes .-> Fbk[[AI Feedback]]
     PR -. notes .-> Fbk
     Fbk -. summaries .-> I
     Fbk -. summaries .-> PR
-
-    %% Culture & pulse thread
-    Pulse[Pulse Surveys] --> People
-    Recog[Recognition] --> People
-    Mood[Mood of Day] --> People
+    Pulse([Pulse Surveys]) --> People((People))
+    Recog([Recognition]) --> People
+    Mood([Mood of Day]) --> People
     People --> CHK
     People --> PR
     People --> Off
     People --> Alumni
-
-    %% Automation & MCP touchpoints
-    C -. SLA task .-> T[Tasks]
-    I -. overdue check .-> Slack
+    C -. SLA task .-> T([Tasks])
+    I -. overdue check .-> Slack([Slack])
     T -.-> Slack
-    Figma -. Ready for Review .-> T
-    Calendar -. schedule .-> CHK
-    Slack -. MCP .-> Automation[Automation Server]
-    OpenAI -. summaries .-> Fbk
-
-    %% Styling
-    classDef hiring fill:#ffe8c2,stroke:#f39c12,color:#000,font-weight:bold;
-    classDef onboard fill:#e3f6ff,stroke:#00a3e0,color:#00334d,font-weight:bold;
-    classDef growth fill:#e6ffe6,stroke:#22a96a,color:#0a3d2d,font-weight:bold;
-    classDef exit fill:#ffe5e5,stroke:#e74c3c,color:#5c0000,font-weight:bold;
-    classDef infra fill:#f7f7f7,stroke:#95a5a6,color:#2c3e50,font-weight:bold;
-
+    Figma([Figma]) -. Ready for Review .-> T
+    Calendar([Calendar]) -. schedule .-> CHK
+    Slack -. MCP .-> Automation([Automation Server / MCP + Worker + PG Mirror])
+    OpenAI([OpenAI]) -. summaries .-> Fbk
+    Postgres([Postgres Mirror]) -. analytics .-> Automation
+    MCP([MCP Clients]) -. Notion/Slack/Figma/PG .-> Automation
+    classDef hiring fill:#ffb347,stroke:#7a3d00,color:#1a0c00,font-weight:bold;
+    classDef onboard fill:#9cc2ff,stroke:#003f99,color:#00162e,font-weight:bold;
+    classDef growth fill:#9ff0b5,stroke:#0f7a33,color:#0a2a16,font-weight:bold;
+    classDef exit fill:#ff9b9b,stroke:#8b0c0c,color:#3d0000,font-weight:bold;
+    classDef infra fill:#e8ebf0,stroke:#1f2937,color:#0f172a,font-weight:bold;
     class C,A,I hiring;
     class O,J,CHK onboard;
     class G,ACH,PR,CE growth;

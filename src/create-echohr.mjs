@@ -87,13 +87,31 @@ function topLevelIntroBlocks() {
     bulleted("AI should summarize and surface insight, not replace judgment.")
   ];
 
-  if (process.env.LOGO_URL) {
+  if (process.env.HERO_VIDEO_URL) {
+    blocks.splice(1, 0, {
+      object: "block",
+      type: "embed",
+      embed: { url: process.env.HERO_VIDEO_URL }
+    });
+  }
+
+  if (process.env.CHARTS_EMBED_URL) {
+    blocks.push({
+      object: "block",
+      type: "embed",
+      embed: { url: process.env.CHARTS_EMBED_URL }
+    });
+  }
+
+  const defaultLogo = "https://raw.githubusercontent.com/ujjavala/EchoHR/main/echohr-logo.png";
+  const logoUrl = process.env.LOGO_URL || process.env.LOCAL_LOGO_URL || defaultLogo;
+  if (logoUrl) {
     blocks.unshift({
       object: "block",
       type: "image",
       image: {
         type: "external",
-        external: { url: process.env.LOGO_URL }
+        external: { url: logoUrl }
       }
     });
   }
@@ -327,9 +345,6 @@ function sectionBlocks(section, sectionPages, covers) {
   const hero = heroImage(covers[section.key] || covers.root);
   if (hero) blocks.splice(1, 0, hero);
 
-  const video = mediaEmbed(process.env.HERO_VIDEO_URL);
-  if (video) blocks.push(video);
-
   return blocks;
 }
 
@@ -485,10 +500,13 @@ async function stylePages(notion, root, sectionPages) {
 
   const iconFor = (key) => sections.find((s) => s.key === key)?.icon || "✨";
 
+  const defaultLogo = "https://raw.githubusercontent.com/ujjavala/EchoHR/main/echohr-logo.png";
+  const logoUrl = process.env.LOGO_URL || process.env.LOCAL_LOGO_URL || defaultLogo;
+
   await notion.request(`/v1/pages/${root.id}`, {
     method: "PATCH",
     body: {
-      icon: process.env.LOGO_URL ? { type: "external", external: { url: process.env.LOGO_URL } } : { type: "emoji", emoji: "💠" },
+      icon: logoUrl ? { type: "external", external: { url: logoUrl } } : { type: "emoji", emoji: "💠" },
       cover: { type: "external", external: { url: covers.root } }
     }
   });

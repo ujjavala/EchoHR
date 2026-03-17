@@ -8,6 +8,12 @@ import { feedbackSweep } from "./handlers/feedback-sweep-handler.mjs";
 import { processNotionWebhook } from "./handlers/notion-webhook-handler.mjs";
 import { statusSweep } from "./handlers/status-sweep-handler.mjs";
 import { loadFeatureFlags, getFeatureFlags, isFeatureEnabled, setFeatureFlags } from "./lib/feature-flags.mjs";
+import { createLimiter } from "./core/limiter.mjs";
+import { withRequestId, logger } from "./core/logger.mjs";
+import { pendingCount } from "./db/job-queue.mjs";
+import crypto from "node:crypto";
+import { rbacAllows } from "./core/rbac.mjs";
+import { snapshot, setMetric } from "./core/metrics.mjs";
 
 loadDotEnv();
 
@@ -15,9 +21,16 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
 const NOTION_TOKEN = process.env.NOTION_TOKEN || "";
 const NOTION_VERSION = process.env.NOTION_VERSION || "2025-09-03";
+const NOTION_WEBHOOK_SECRET = process.env.NOTION_WEBHOOK_SECRET || "";
+const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET || "";
 
 let cachedInstallState = null;
 let cachedNotionClient = null;
+const limiter = createLimiter({
+  concurrency: Number(process.env.NOTION_RATE_CONCURRENCY || 1),
+  intervalMs: Number(process.env.NOTION_RATE_DELAY_MS || 400),
+  backoffBaseMs: Number(process.env.NOTION_BACKOFF_BASE_MS || 800)
+});
 
 // Preload feature flags
 await loadFeatureFlags().catch(() => null);
@@ -27,7 +40,19 @@ function notion() {
     throw new Error("NOTION_TOKEN is required for webhook processing.");
   }
   if (!cachedNotionClient) {
-    cachedNotionClient = new NotionClient({ token: NOTION_TOKEN, version: NOTION_VERSION });
+    const base = new NotionClient({ token: NOTION_TOKEN, version: NOTION_VERSION });
+    // In high-volume mode, wrap Notion operations with a simple limiter
+    if (process.env.HIGH_VOLUME === "true") {
+      cachedNotionClient = new Proxy(base, {
+        get(target, prop) {
+          const value = target[prop];
+          if (typeof value !== "function") return value;
+          return (...args) => limiter(() => target[prop](...args));
+        }
+      });
+    } else {
+      cachedNotionClient = base;
+    }
   }
   return cachedNotionClient;
 }
@@ -59,12 +84,47 @@ async function readBody(request) {
     return {};
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return JSON.parse(raw);
+}
+
+async function readBodyRaw(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url || "/", `http://${request.headers.host}`);
+    const requestId = withRequestId(request);
+    const start = Date.now();
+    logger.info("request", { path: url.pathname, method: request.method, requestId });
+
+    if (request.method === "GET" && url.pathname === "/ready") {
+      const pgConfigured = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
+      let pgOk = false;
+      if (pgConfigured) {
+        try {
+          const { getPg } = await import("./db/pg.mjs");
+          const pg = getPg();
+          if (pg) {
+            await pg.query("SELECT 1");
+            pgOk = true;
+          }
+        } catch {
+          pgOk = false;
+        }
+      }
+      return json(response, 200, {
+        ok: true,
+        service: "echohr-automation-server",
+        postgresConfigured: pgConfigured,
+        queuePending: pgConfigured ? await pendingCount().catch(() => 0) : 0
+      });
+    }
 
     if (request.method === "GET" && url.pathname === "/health") {
       return json(response, 200, {
@@ -75,6 +135,9 @@ const server = createServer(async (request, response) => {
         slackConfigured: Boolean(process.env.SLACK_BOT_TOKEN),
         featureFlags: getFeatureFlags()
       });
+    }
+    if (request.method === "GET" && url.pathname === "/metrics") {
+      return json(response, 200, snapshot());
     }
 
     if (request.method === "POST" && url.pathname === "/summaries/interview") {
@@ -94,7 +157,17 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/notion") {
-      const body = await readBody(request);
+      const raw = await readBodyRaw(request);
+      if (NOTION_WEBHOOK_SECRET) {
+        const sig = request.headers["x-echohr-signature"];
+        const hmac = crypto.createHmac("sha256", NOTION_WEBHOOK_SECRET).update(raw).digest("hex");
+        if (sig !== hmac) return json(response, 401, { ok: false, error: "invalid signature" });
+      }
+      const body = raw ? JSON.parse(raw) : {};
+      const role = body?.context?.role;
+      if (role && !rbacAllows(role, "auto_candidate_applications")) {
+        return json(response, 403, { ok: false, error: "forbidden by RBAC" });
+      }
       if (!isFeatureEnabled("auto_candidate_applications", true) && !isFeatureEnabled("auto_onboarding_from_offer", true)) {
         return json(response, 200, { ok: true, skipped: true, reason: "Automation disabled by feature flags" });
       }
@@ -105,7 +178,13 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/figma") {
-      const body = await readBody(request);
+      const raw = await readBodyRaw(request);
+      if (process.env.FIGMA_WEBHOOK_SECRET) {
+        const sig = request.headers["x-figma-signature"];
+        const hmac = crypto.createHmac("sha256", process.env.FIGMA_WEBHOOK_SECRET).update(raw).digest("hex");
+        if (sig !== hmac) return json(response, 401, { ok: false, error: "invalid figma signature" });
+      }
+      const body = raw ? JSON.parse(raw) : {};
       const state = await loadInstallState();
       if (!state) return json(response, 200, { ok: false, reason: "No install state" });
       const results = await handleFigmaWebhook(body, state, notion());
@@ -136,16 +215,19 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/slack") {
-      const body = await readBody(request);
+      const raw = await readBodyRaw(request);
+      if (SLACK_SIGNING_SECRET) {
+        const ts = request.headers["x-slack-request-timestamp"];
+        const sig = request.headers["x-slack-signature"];
+        const base = `v0:${ts}:${raw}`;
+        const hmac = "v0=" + crypto.createHmac("sha256", SLACK_SIGNING_SECRET).update(base).digest("hex");
+        if (sig !== hmac) return json(response, 401, { ok: false, error: "invalid slack signature" });
+      }
+      const body = JSON.parse(raw || "{}");
       if (body.type === "url_verification" && body.challenge) {
         return json(response, 200, { challenge: body.challenge });
       }
-
-      return json(response, 200, {
-        ok: true,
-        route: "slack",
-        received: body
-      });
+      return json(response, 200, { ok: true, route: "slack", received: body });
     }
 
     // Runtime feature flag override (admin/testing): POST /ops/feature-flags {flags:{}}
@@ -164,6 +246,8 @@ const server = createServer(async (request, response) => {
       ok: false,
       error: error.message
     });
+  } finally {
+    setMetric("webhook_latency_ms", Date.now() - start);
   }
 });
 

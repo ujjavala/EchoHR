@@ -1,7 +1,9 @@
 import { pageTitleProperty, selectProperty, dateProperty } from "../lib/notion.mjs";
 import { pickTitle } from "../lib/feedback.mjs";
-import { sendSlackMessage } from "../lib/slack.mjs";
+import { sendSlackAsync } from "../lib/slack.mjs";
 import { isFeatureEnabled } from "../lib/feature-flags.mjs";
+import { syncToPostgres } from "../db/postgres-sync.mjs";
+import { enqueueJob } from "../db/job-queue.mjs";
 
 export const STATUS_FIELDS_BY_DB = {
   candidates: ["Candidate Status", "Stage"],
@@ -140,6 +142,8 @@ async function createOnboardingFromAcceptedOffer(notionClient, state, offerPageI
   return { ok: true, onboardingJourneyId: journey.id, offerTitle: title };
 }
 
+const idempotencySeen = new Set();
+
 export async function processNotionWebhook(body, notionClient, state) {
   const events = body?.events || (body?.event ? [body.event] : [body]).filter(Boolean);
   const results = [];
@@ -149,6 +153,13 @@ export async function processNotionWebhook(body, notionClient, state) {
       event?.data_source_id ||
       event?.parent?.data_source_id;
     const pageId = event?.data?.id || event?.id;
+    const edited = event?.data?.last_edited_time || event?.last_edited_time;
+    const idemKey = `${pageId}:${edited || ""}`;
+    if (idempotencySeen.has(idemKey)) {
+      results.push({ ok: true, skipped: true, reason: "duplicate_event" });
+      continue;
+    }
+    idempotencySeen.add(idemKey);
     if (!dsId || !pageId) {
       results.push({ ok: false, skipped: true, reason: "Missing data_source_id or page id" });
       continue;
@@ -161,10 +172,11 @@ export async function processNotionWebhook(body, notionClient, state) {
       }
       const res = await createApplicationFromCandidate(notionClient, state, pageId);
       results.push(res);
-      await sendSlackMessage({
+      await sendSlackAsync({
         text: `New candidate processed: ${res.candidateTitle}. Application created (${res.createdApplicationId}). SLA task added for stage owner.`,
         channel: process.env.SLACK_DEFAULT_CHANNEL
       }).catch(() => null);
+      await enqueueJob("status_mirror", { pageId, dbKey: "candidates", status: "created" }).catch(() => null);
       continue;
     }
 
@@ -178,7 +190,7 @@ export async function processNotionWebhook(body, notionClient, state) {
       if (status === "Accepted") {
         const res = await createOnboardingFromAcceptedOffer(notionClient, state, pageId);
         results.push(res);
-        await sendSlackMessage({
+        await sendSlackAsync({
           text: `Offer accepted: ${res.offerTitle}. Onboarding journey created and first 3 monthly check-ins scheduled.`,
           channel: process.env.SLACK_DEFAULT_CHANNEL
         }).catch(() => null);
@@ -193,9 +205,16 @@ export async function processNotionWebhook(body, notionClient, state) {
         const page = await notionClient.request(`/v1/pages/${pageId}`);
         const msg = statusMessage(dbKey, page);
         if (msg) {
-          await sendSlackMessage({
+          await sendSlackAsync({
             text: `Status update (${dbKey}): ${msg}`,
             channel: process.env.SLACK_DEFAULT_CHANNEL
+          }).catch(() => null);
+          await syncToPostgres({
+            pageId,
+            dbKey,
+            title: pickTitle(page),
+            updatedAt: page.last_edited_time,
+            payload: { status: msg }
           }).catch(() => null);
           results.push({ ok: true, notified: true, db: dbKey, pageId });
           continue;
