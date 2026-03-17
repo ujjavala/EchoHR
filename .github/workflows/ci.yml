@@ -14,14 +14,19 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Clean npm cache and install (resilient)
+        env:
+          NPM_CONFIG_FUND: "false"
+          NPM_CONFIG_AUDIT: "false"
         run: |
+          rm -rf ~/.npm
           npm set progress=false
           npm config set registry https://registry.npmjs.org
-          npm config set fetch-retries 5
+          npm config set fetch-retries 6
           npm config set fetch-retry-mintimeout 1000
-          npm config set fetch-retry-maxtimeout 2000
+          npm config set fetch-retry-maxtimeout 4000
+          npm config set prefer-offline false
           npm cache clean --force
-          npm ci --ignore-scripts --registry=https://registry.npmjs.org --prefer-online
+          npm ci --ignore-scripts --legacy-peer-deps --force --registry=https://registry.npmjs.org --prefer-online --cache /tmp/npm-cache
       - name: Static checks
         run: npm run check
       - name: Contract tests
